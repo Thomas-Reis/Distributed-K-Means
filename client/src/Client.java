@@ -14,7 +14,5 @@ public class Client {
         ArrayList<ArrayList<Point>> client1 = new ArrayList<>();
         ArrayList<ArrayList<Point>> client2 = new ArrayList<>();
         ArrayList<ArrayList<Point>> client3 = new ArrayList<>();
-
-
     }
 }
