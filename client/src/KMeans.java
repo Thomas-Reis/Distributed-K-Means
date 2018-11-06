@@ -92,6 +92,7 @@ public class KMeans {
         // Temporary list that holds the total values before dividing and calculating the new centroids
         ArrayList<double[]> temp_total_centroid_additions = new ArrayList<>();
         // Initialize the temporary list to contain double arrays with values of 0 for all centroids
+        //TODO find a way to initialize this once (without duplication)
         for (int i = 0; i < client_additions.get(0).size(); i++) {
             temp_total_centroid_additions.add(new double[] {0, 0, 0});
         }
