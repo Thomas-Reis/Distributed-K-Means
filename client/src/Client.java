@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 
 public class Client {
+    public int weight = 1;
     public static void main(String[] args) {
         ArrayList<Point> centroids = new ArrayList<>();
         centroids.add(new Point(0, 0));
