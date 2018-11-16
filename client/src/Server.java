@@ -12,6 +12,7 @@ public class Server extends Observable {
 
     public static void main(String[] args){
         //TODO make a new thread to accept clients
+        //TODO Remember to put all Clients that connect into client_list
         ArrayList<Client> client_list = new ArrayList<Client>();
 
         //LOOP START
@@ -27,11 +28,11 @@ public class Server extends Observable {
 
         //A point tracker to keep track of where the loop left off on assigning points
         int Point_Tracker = 0;
-        int points_to_send = TotalPoints.size()/POINTS_PER_HANDOUT;
+        int points_to_send = TotalPoints.size()/POINTS_PER_HANDOUT * client_list.size();
         //TODO assign rows to clients
         //This method may not need the TotalPoints array depending on how we query for the points
         Point_Tracker = AssignPoints(points_to_send, Point_Tracker, client_list, TotalPoints);
-
+        
         //DURING ITERATION
         //TODO perform load balancing here
         //this means:
@@ -58,7 +59,7 @@ public class Server extends Observable {
     }
 
     private static int AssignPoints(int point_limit, int Point_Tracker, ArrayList<Client> client_list, ArrayList<Point> TotalPoints){
-        //the number of points to allocate this run
+        //the number of points to allocate this run of handouts
         int n = point_limit;
         ArrayList<Point> temp_assign_array = new ArrayList<>();
 
