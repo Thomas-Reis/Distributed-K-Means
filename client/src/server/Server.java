@@ -51,7 +51,6 @@ public class Server extends Observable {
         //TODO assign rows to clients
         //This method may not need the TotalPoints array depending on how we query for the points
         Point_Tracker = AssignPoints(points_to_send, Point_Tracker, client_list, TotalPoints);
-        System.out.println("Break Here");
         //DURING ITERATION
         //TODO perform load balancing here
         //this means:
@@ -97,13 +96,14 @@ public class Server extends Observable {
             client.getOut().println(client_points_amount);
             for(int i=Point_Tracker;i < Point_Tracker + client_points_amount; i++) {
                 //for now this simply allocates the points locally to each client
-                //TODO find a way to transfer these points over to the client rather than local allocation
-                temp_assign_array.add(TotalPoints.get(i));
+                //TODO find a way to Mark points as belonging to certain clients before allocation
                 try {
+                    //Sends the current point object to the client
                     client.getObj_Out().writeObject(TotalPoints.get(i));
                 } catch (Exception e){
                     System.out.println("Unable to assign all points to client");
-                    //unassigns the points
+                    //TODO find a way to UnMark points as well
+                    //unassigns the points from the point tracker
                     Point_Tracker -= client_points_amount;
                 }
             }
