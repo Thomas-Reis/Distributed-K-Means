@@ -6,14 +6,14 @@ import java.util.ArrayList;
 public class PointGroup implements Serializable {
 
     private ArrayList<Point> points;
-    private double score;
+    private double group_sum;
     private String uid;
     private String processed_by = "";
 
     PointGroup(ArrayList<Point> points, String uid) {
         this.points = points;
         this.uid = uid;
-        this.score = 0;
+        this.group_sum = 0;
     }
 
     public ArrayList<Point> getPoints() {
@@ -21,11 +21,11 @@ public class PointGroup implements Serializable {
     }
 
     public void addScore(double value) {
-        this.score += value;
+        this.group_sum += value;
     }
 
-    public double getScore() {
-        return this.score;
+    public double getGroupSum() {
+        return this.group_sum;
     }
 
     public String getUid() {

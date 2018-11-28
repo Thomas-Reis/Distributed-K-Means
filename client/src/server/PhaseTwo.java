@@ -96,22 +96,18 @@ public class PhaseTwo implements Runnable {
             //Check end conditions
             //TODO: Implement end conditions
             if (this.clusters_received >= this.expected_clusters) {
-                //TODO: Handle closing
 
-
-
-                //Let the Coordinator know we've finished
-                this.control_return.send((this.uid +" DONE").getBytes(ZMQ.CHARSET));
-
-                //Clean up our mess
-                this.task_receive_socket.close();
-                this.control_socket.close();
-                this.control_return.close();
-                return;
+                break;
             }
 
         }
+        //Let the Coordinator know we've finished
+        this.control_return.send((this.uid +" DONE").getBytes(ZMQ.CHARSET));
 
+        //Clean up our mess
+        this.task_receive_socket.close();
+        this.control_socket.close();
+        this.control_return.close();
 
 
     }
