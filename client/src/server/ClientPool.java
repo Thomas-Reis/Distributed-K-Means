@@ -1,11 +1,11 @@
 package server;
 
+import shared.ClientObject;
+
 import java.net.Socket;
 import java.util.ArrayList;
 
 public class ClientPool {
-
-    public ArrayList<Socket> clients = new ArrayList<>();
 
     public ClientPool(){
         //TODO: Instantiate the instance variables
@@ -19,10 +19,9 @@ public class ClientPool {
      */
     public boolean registerClient(Socket client_socket) {
 
-        //TODO: Client verification
+        //TODO: client.Client verification
         //NOTE: Keep as socket, or convert back to url & reconnect later?
-
-        this.clients.add(client_socket);
+        //ClientObject tmp_client = new ClientObject(client_socket);
 
         return true;
     }

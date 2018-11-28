@@ -1,6 +1,10 @@
+package client;
+
 import shared.Point;
 
 import java.io.DataInputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -18,25 +22,29 @@ public class Client {
     private static DataInputStream r;
     //The write line for the socket
     private static PrintStream w;
+    private static ObjectOutputStream Obj_w;
+    private static ObjectInputStream Obj_r;
 
     public static void main(String[] args) throws InterruptedException {
         //OLD CODE
         connect_to_socket(SERVERIP, PORT);
 
-        /*
-        Centroids.add(new Point(0, 0));
-        Centroids.add(new Point(1, 0));
-        Centroids.add(new Point(2, 0));
-
-        Point p1 = new Point(3, 10);
-        Point p2 = new Point(2, 10);
-        Point p3 = new Point(0.25, 10);*/
+        try {
+            int num_points = Integer.parseInt(r.readLine());
+            System.out.println(num_points);
+            for (int i=0;i<num_points;i++){
+                Point tmp_point = (Point)Obj_r.readObject();
+                AssignedPoints.add(tmp_point);
+            }
+            ReceivePoints(AssignedPoints);
+        } catch (Exception e){
+            e.printStackTrace();
+            System.exit(-100);
+        }
 
         ArrayList<ArrayList<Point>> client1 = new ArrayList<>();
         ArrayList<ArrayList<Point>> client2 = new ArrayList<>();
         ArrayList<ArrayList<Point>> client3 = new ArrayList<>();
-
-
         //NEW CODE
         while(true){
             while(AssignedPoints.size() > 0){
@@ -53,8 +61,11 @@ public class Client {
             r=new DataInputStream(client.getInputStream());
             w=new PrintStream(client.getOutputStream());
             in=new DataInputStream(System.in);
+            Obj_w = new ObjectOutputStream(client.getOutputStream());
+            Obj_r = new ObjectInputStream(client.getInputStream());
         } catch (Exception e){
-
+            e.printStackTrace();
+            System.exit(-200);
         }
     }
 
@@ -62,11 +73,11 @@ public class Client {
         //TODO update the sums and number of points per centroid to the server somehow
     }
 
-    public void ReceiveCentroids(ArrayList<Point> updated_centroids){
+    public static void ReceiveCentroids(ArrayList<Point> updated_centroids){
         Centroids = updated_centroids;
     }
 
-    public void ReceivePoints(ArrayList<Point> GivenPoints){
+    public static void ReceivePoints(ArrayList<Point> GivenPoints){
         //Adds all points sent from the server to the client's AssignedPoints list
         AssignedPoints.addAll(GivenPoints);
     }
