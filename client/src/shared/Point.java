@@ -1,9 +1,11 @@
 package shared;
 
+import java.io.Serializable;
+
 /**
  * Holds x, y information for a point. Couldn't use default java points, as doubles are required.
  */
-public class Point {
+public class Point implements Serializable {
     private double x;
     private double y;
     private double centroid_x;
