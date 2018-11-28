@@ -7,7 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Listener extends Thread{
-    public static ClientPool current_pool;
+    //public static ClientPool current_pool;
 
     public Listener(){
         this.start();
