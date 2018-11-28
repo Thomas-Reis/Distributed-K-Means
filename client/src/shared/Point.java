@@ -6,6 +6,8 @@ package shared;
 public class Point {
     private double x;
     private double y;
+    private double centroid_x;
+    private double centroid_y;
 
     /**
      * Creates a new point with a given x, y value.
@@ -21,15 +23,23 @@ public class Point {
         return x;
     }
 
-    public void setX(double x) {
-        this.x = x;
-    }
-
     public double getY() {
         return y;
     }
 
-    public void setY(double y) {
-        this.y = y;
+    public double getCentroidX() {
+        return this.centroid_x;
+    }
+
+    public double getCentroidY() {
+        return this.centroid_y;
+    }
+
+    public void setCentroidX(double x) {
+        this.centroid_x = x;
+    }
+
+    public void setCentroidY(double y) {
+        this.centroid_y = y;
     }
 }
