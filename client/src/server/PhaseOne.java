@@ -6,13 +6,14 @@ public class PhaseOne implements Runnable {
     private ClientPool pool;
     private ClientLink origin;
     private ClientDatabaseConnection clientDB;
-    private
+    private CentroidDatabaseConnection centroidDB;
 
     PhaseOne(ClientPool pool) {
         this.busy = false;
         this.pool = pool;
         this.origin = pool.getHighestScoringClient();
         this.clientDB = new ClientDatabaseConnection(this.origin);
+        this.centroidDB = new CentroidDatabaseConnection(this.origin.getUID());
     }
 
     PhaseOne(PhaseTwo phase_two_origin) {
