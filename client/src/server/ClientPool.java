@@ -27,4 +27,8 @@ public class ClientPool {
         return true;
     }
 
+    public ClientLink getHighestScoringClient() {
+        return null;
+    }
+
 }

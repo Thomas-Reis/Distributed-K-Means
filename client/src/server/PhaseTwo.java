@@ -1,23 +1,14 @@
 package server;
 
-public class PhaseOne implements Runnable {
-
+public class PhaseTwo implements Runnable {
     private boolean busy;
-    private ClientPool pool;
     private ClientLink origin;
-    private ClientDatabaseConnection clientDB;
-    private
 
-    PhaseOne(ClientPool pool) {
+    PhaseTwo(PhaseOne phase_one) {
         this.busy = false;
-        this.pool = pool;
-        this.origin = pool.getHighestScoringClient();
-        this.clientDB = new ClientDatabaseConnection(this.origin);
+        this.origin = phase_one.getOrigin();
     }
 
-    PhaseOne(PhaseTwo phase_two_origin) {
-        this.origin = phase_two_origin.getOrigin();
-    }
 
     @Override
     public void run() {
@@ -35,6 +26,4 @@ public class PhaseOne implements Runnable {
     public ClientLink getOrigin() {
         synchronized (this) { return this.origin; }
     }
-
 }
-
