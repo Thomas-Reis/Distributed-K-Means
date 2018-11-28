@@ -2,12 +2,19 @@ package server;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
+import shared.PointGroup;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 
 public class PhaseTwo implements Runnable {
     private CentroidDatabaseConnection centroidDB;
 
     private String uid;
-    private int redundant_calculations;
+    private int expected_clusters = Integer.MAX_VALUE;
+    private int clusters_received = 0;
 
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
@@ -20,14 +27,14 @@ public class PhaseTwo implements Runnable {
     //Control_return = 10011
 
 
-    PhaseTwo(ZMQ.Context zmq_context, CentroidDatabaseConnection centroidDB, String uid, int redundant_connections) {
+    PhaseTwo(ZMQ.Context zmq_context, CentroidDatabaseConnection centroidDB, String uid) {
         this.uid = uid;
-        this.redundant_calculations = redundant_connections;
 
         this.centroidDB = centroidDB;
 
         //Setup the transmission socket
         this.task_receive_socket = zmq_context.socket(SocketType.PULL);
+        this.task_receive_socket.setBacklog(3); //Allow only 3 messages on local queue
         this.task_receive_socket.bind("tcp://*:10001");
 
         //Setup the control downlink
@@ -57,6 +64,50 @@ public class PhaseTwo implements Runnable {
             if (control != null) {
                 String message =  new String(control, ZMQ.CHARSET);
                 String[] msg_parts = message.split(" ");
+
+                //TODO: Process the message
+
+                if (msg_parts[1].equals("COUNT"))
+                { this.expected_clusters = Integer.parseInt(msg_parts[2]); }
+
+            }
+
+            //Check for clusters from the workers
+            byte[] cluster_raw = this.task_receive_socket.recv(ZMQ.DONTWAIT);
+            if (cluster_raw != null) {
+
+                PointGroup cluster = null;
+
+                //Convert from bytes
+                ByteArrayInputStream byte_stream = new ByteArrayInputStream(cluster_raw);
+                try (ObjectInput converter = new ObjectInputStream(byte_stream)) {
+                    cluster = (PointGroup) converter.readObject();
+                } catch (IOException | ClassNotFoundException ex) { cluster = null; }
+
+                //If cluster converted properly
+                if (cluster != null) {
+                    //TODO: Process the cluster
+
+                    //Increment the cluster count
+                    this.clusters_received++;
+                }
+            }
+
+            //Check end conditions
+            //TODO: Implement end conditions
+            if (this.clusters_received >= this.expected_clusters) {
+                //TODO: Handle closing
+
+
+
+                //Let the Coordinator know we've finished
+                this.control_return.send((this.uid +" DONE").getBytes(ZMQ.CHARSET));
+
+                //Clean up our mess
+                this.task_receive_socket.close();
+                this.control_socket.close();
+                this.control_return.close();
+                return;
             }
 
         }

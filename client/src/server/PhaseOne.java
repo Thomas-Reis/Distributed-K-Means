@@ -88,6 +88,12 @@ public class PhaseOne implements Runnable {
 
         //Let the Coordinator know we've finished
         this.control_return.send((this.uid +" DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));
+
+        //Clean up our mess
+        this.task_transmit_socket.close();
+        this.control_socket.close();
+        this.control_return.close();
+        return;
     }
 
 }
