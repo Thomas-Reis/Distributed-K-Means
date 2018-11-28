@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class ClientPool {
 
-    private ArrayList<Socket> clients;
+    public ArrayList<Socket> clients = new ArrayList<>();
 
     public ClientPool(){
         //TODO: Instantiate the instance variables
