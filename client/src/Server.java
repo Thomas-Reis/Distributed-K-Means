@@ -1,3 +1,4 @@
+import server.Listener;
 import shared.Point;
 
 import java.util.ArrayList;
@@ -15,6 +16,18 @@ public class Server extends Observable {
         //TODO make a new thread to accept clients
         //TODO Remember to put all Clients that connect into client_list
         ArrayList<Client> client_list = new ArrayList<Client>();
+
+        Listener client_listener = new Listener();
+
+        while (client_listener.current_pool.clients.size() < 1) {
+            System.out.println(client_listener.current_pool.clients);
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                System.out.println(e);
+                break;
+            }
+        }
 
         //LOOP START
         //TODO select an "origin" client from the pool
