@@ -36,7 +36,6 @@ public class Client {
                 Point tmp_point = (Point)Obj_r.readObject();
                 AssignedPoints.add(tmp_point);
             }
-            ReceivePoints(AssignedPoints);
         } catch (Exception e){
             e.printStackTrace();
             System.exit(-100);
@@ -77,6 +76,7 @@ public class Client {
         Centroids = updated_centroids;
     }
 
+    //REDUNDANT METHOD
     public static void ReceivePoints(ArrayList<Point> GivenPoints){
         //Adds all points sent from the server to the client's AssignedPoints list
         AssignedPoints.addAll(GivenPoints);
