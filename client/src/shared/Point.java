@@ -1,3 +1,5 @@
+package shared;
+
 /**
  * Holds x, y information for a point. Couldn't use default java points, as doubles are required.
  */
