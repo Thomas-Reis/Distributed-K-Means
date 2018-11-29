@@ -15,6 +15,10 @@ public class Client {
     public int weight = 1;
     private static ArrayList<Point> AssignedPoints = new ArrayList<>();
     private static ArrayList<Point> Centroids = new ArrayList<>();
+
+    private static int control_transmit_port = 10010;
+    private static int control_return_port = 10011;
+
     static String SERVERIP = "127.0.0.1";
     private static int client_uid;
     static int PORT = 5555;
@@ -37,10 +41,17 @@ public class Client {
                 client_taskboard = zmq_context.socket(SocketType.PULL);
                 client_taskboard.connect("tcp://" + task_board_IP + ":" + task_board_port);
                 server_msg = client_taskboard.recv();
+                System.out.println("Recieved Points from Coordinator");
                 try {
                     ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(server_msg);
                     ObjectInputStream is = new ObjectInputStream(Input_Byte_Converter);
-                    PointGroup MyPoints = (PointGroup) is.readObject();
+                    PointGroup MyPoint_Group = (PointGroup) is.readObject();
+                    System.out.println("Break Here");
+                    ArrayList<Point> MyPoints = MyPoint_Group.getPoints();
+                    //TODO pass points into K-Means Method provided by Bradman
+                    //RETURNS ARRAY LIST OF POINTS BACK
+                    //Create a new point group or reuse them (clear it if i do)
+                    //PointGroup.addPointsToList(Arraylist Thing)
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.exit(-300);
@@ -55,18 +66,20 @@ public class Client {
     public static void connect_to_socket(String ip){
         try {
             client_req = zmq_context.socket(SocketType.REQ);
-            client_req.connect("tcp://" + ip + ":10001");
+            client_req.connect("tcp://" + ip + ":" + control_return_port);
             String tmp_msg = "-1 JOIN";
             client_req.send(tmp_msg.getBytes(ZMQ.CHARSET), 0);
             byte[] uid_rep = client_req.recv();
+            System.out.println("Connecting to Coordinator");
             String uid_rep_string = new String(uid_rep, ZMQ.CHARSET);
             String[] reply_msg = uid_rep_string.split(" ");
             if(reply_msg[1].equals("GOOD")) {
                 client_uid = Integer.parseInt(reply_msg[0]);
             }
+            System.out.println("Assigned client ID " + client_uid);
 
             client_sub = zmq_context.socket(SocketType.SUB);
-            client_sub.connect("tcp://" + ip + ":10010");
+            client_sub.connect("tcp://" + ip + ":" + control_transmit_port);
             // setting up the broadcast channel
             client_sub.subscribe("BROADCAST");
             // setting up the client upload socket

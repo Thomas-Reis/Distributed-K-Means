@@ -34,6 +34,19 @@ public class PhaseOne implements Runnable {
     //Control_publish = 10010
     //Control_return = 10011
 
+    public static void main(String[] args){
+        ZMQ.Context zmq_context = ZMQ.context(2);
+        DatabaseHelper db = new DatabaseHelper("root", "", "localhost", 3306,
+                "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
+                "loc_x", "loc_y", "centroids", "id",
+                "centroid_number", "iteration", "loc_x",
+                "loc_y");
+        int ClusterSize = 20;
+        int Redundant_Calcs = 5;
+        PhaseOne init = new PhaseOne(zmq_context, db, "100",Redundant_Calcs,ClusterSize);
+        init.run();
+    }
+
 
     PhaseOne(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int redundant_calculations, int group_size) {
         this.db = db;
@@ -82,11 +95,13 @@ public class PhaseOne implements Runnable {
 
             //Make sure it converted properly
             if (message.length != 1) {
+                System.out.print("Outputting Points...");
                 //Send the message to as many users as specified
                 for (int i=0; i < this.redundant_calculations; i++) {
                     this.task_transmit_socket.send(message);
                     this.clusters_sent++;
                 }
+                System.out.println("Complete!");
             }
         }
 

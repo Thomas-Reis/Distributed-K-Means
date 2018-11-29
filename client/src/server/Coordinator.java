@@ -6,12 +6,12 @@ import org.zeromq.ZMQ;
 import java.util.HashMap;
 
 public class Coordinator implements Runnable {
-
-    private static int control_transmit_port = 10000;
-    private static int control_return_port = 10001;
+    ;
     private static String PHASEONEIP = "127.0.0.1";
-    //private static int task_transmit_port = 10010;
-    //private static int task_return_port = 10011;
+    //private static int task_transmit_port = 10000;
+    //private static int task_return_port = 10001;
+    private static int control_transmit_port = 10010;
+    private static int control_return_port = 10011;
 
     private HashMap<Integer, Integer> client_score_map = new HashMap<>();
 
@@ -19,7 +19,7 @@ public class Coordinator implements Runnable {
     private static int minimum_clients = 2;
 
     private int newest_id = 0;
-    private int phase_one_id = -1;
+    private int phase_one_id = 100;
     private int phase_two_id = -1;
 
     private ZMQ.Socket control_transmit;
@@ -55,6 +55,7 @@ public class Coordinator implements Runnable {
 
             //New user joining the network, send them an id
             if (message.equals("-1 JOIN")) {
+                System.out.println("Recieved a Client, Assigned ID " + this.newest_id);
                 String response = (this.newest_id++) + " GOOD";
                 this.control_return.send(response.getBytes(ZMQ.CHARSET));
             }
@@ -83,7 +84,7 @@ public class Coordinator implements Runnable {
                     //TODO: What do when PhaseTwo starts?
                 } else if (message_chunks[1].equals("SCORE")) { //Sent score for client
                     this.incrementClientScore(Integer.parseInt(message_chunks[2]), Integer.parseInt(message_chunks[3]));
-                } else if (message_chunks[2].equals("DONE")) { //Finished
+                } else if (message_chunks[1].equals("DONE")) { //Finished
                     //TODO: Do something to clean up the thing
                 }
             }
