@@ -2,24 +2,26 @@ package server;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
-import shared.Point;
 import shared.PointGroup;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.util.HashMap;
 
 public class PhaseTwo implements Runnable {
     private DatabaseHelper db;
 
     private String uid;
-    private int expected_clusters = Integer.MAX_VALUE;
-    private int clusters_received = 0;
+    private int expected_points = Integer.MAX_VALUE;
+    private int points_received = 0;
 
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
     private ZMQ.Socket task_receive_socket;
+
+    private HashMap<String, PointGroup> point_groups_received = new HashMap<>();
 
     //PORTS USED:
     //Task_publish = 10000
@@ -57,9 +59,10 @@ public class PhaseTwo implements Runnable {
         //Let the Coordinator know we've started
         this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
 
-        int step = 1;
-        while (true) {
-            this.control_return.send((this.uid +" STEP " + step).getBytes(ZMQ.CHARSET));
+        int iteration = 1;
+        // TODO iteration number has been hardcoded to 10
+        while (iteration < 10) {
+            this.control_return.send((this.uid + " ITERATION " + iteration).getBytes(ZMQ.CHARSET));
 
             //Check for messages from control
             byte[] control = this.control_socket.recv(ZMQ.DONTWAIT);
@@ -70,7 +73,7 @@ public class PhaseTwo implements Runnable {
                 //TODO: Process the message
 
                 if (msg_parts[1].equals("COUNT"))
-                { this.expected_clusters = Integer.parseInt(msg_parts[2]); }
+                { this.expected_points = Integer.parseInt(msg_parts[2]); }
 
             }
 
@@ -89,29 +92,40 @@ public class PhaseTwo implements Runnable {
                 //If cluster converted properly
                 if (cluster != null) {
                     //TODO: Process the cluster
-                    // TODO Check this, Bradon tired
-                    // Loop through the cluster's points
-                    for (Point p : cluster.getPoints()) {
-                        // Write to the database that the centroid is owned
-                        if (p.get)
+                    // TODO double check for tired Bradon
+                    // Check if the uid has been received already
+                    if (point_groups_received.containsKey(cluster.getUid())) {
+                        // Get the value from the hashed map
+                        PointGroup old_group = point_groups_received.get(cluster.getUid());
+                        // Append the old group's points into the new cluster
+                        cluster.addPointsToList(old_group.getPoints());
+                        point_groups_received.replace(cluster.getUid(), cluster);
+                    }
+                    // Put the cluster group into the hash map if has already been received
+                    else {
+                        point_groups_received.put(cluster.getUid(), cluster);
                     }
 
                     //Update the Coordinator with the id score
                     this.control_return.send(this.uid + " SCORE " + cluster.getProcessedBy() + " " + 1);
 
-                    //Increment the cluster count
-                    this.clusters_received++;
+                    //Increment the number of points received
+                    this.points_received += cluster.getPoints().size();
                 }
             }
 
-            //Check end conditions
-            //TODO: Implement end conditions
-            if (this.clusters_received >= this.expected_clusters) {
-
-                break;
+            // Check if the number of points received is the expected number
+            if (this.points_received >= this.expected_points) {
+                // TODO perform the kmeans division on the set
+                iteration++;
+                // Check to see if return type has been met
+                // TODO for now this will be simply if the number of iterations needed has been met. HARDCODED TO 10!
+                if (iteration >= 10) {
+                    // TODO Perform return type here
+                }
             }
-
         }
+
         //Clean up our mess
         this.task_receive_socket.close();
         this.control_socket.close();

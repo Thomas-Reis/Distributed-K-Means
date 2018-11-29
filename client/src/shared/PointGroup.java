@@ -43,4 +43,8 @@ public class PointGroup implements Serializable {
         return this.processed_by;
     }
 
+    public void addPointsToList(ArrayList<Point> new_points) {
+        points.addAll(new_points);
+    }
+
 }
