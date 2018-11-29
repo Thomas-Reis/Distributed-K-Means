@@ -10,7 +10,7 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 
 public class PhaseTwo implements Runnable {
-    private CentroidDatabaseConnection centroidDB;
+    private DatabaseHelper db;
 
     private String uid;
     private int expected_clusters = Integer.MAX_VALUE;
@@ -27,10 +27,10 @@ public class PhaseTwo implements Runnable {
     //Control_return = 10011
 
 
-    PhaseTwo(ZMQ.Context zmq_context, CentroidDatabaseConnection centroidDB, String uid) {
+    PhaseTwo(ZMQ.Context zmq_context, DatabaseHelper db, String uid) {
         this.uid = uid;
 
-        this.centroidDB = centroidDB;
+        this.db = db;
 
         //Setup the transmission socket
         this.task_receive_socket = zmq_context.socket(SocketType.PULL);
@@ -77,7 +77,7 @@ public class PhaseTwo implements Runnable {
             byte[] cluster_raw = this.task_receive_socket.recv(ZMQ.DONTWAIT);
             if (cluster_raw != null) {
 
-                PointGroup cluster = null;
+                PointGroup cluster;
 
                 //Convert from bytes
                 ByteArrayInputStream byte_stream = new ByteArrayInputStream(cluster_raw);

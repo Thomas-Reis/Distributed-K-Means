@@ -10,7 +10,7 @@ public class PointGroup implements Serializable {
     private String uid;
     private String processed_by = "";
 
-    PointGroup(ArrayList<Point> points, String uid) {
+    public PointGroup(ArrayList<Point> points, String uid) {
         this.points = points;
         this.uid = uid;
         this.group_sum = 0;
