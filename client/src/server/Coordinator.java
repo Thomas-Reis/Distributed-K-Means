@@ -8,6 +8,7 @@ import java.util.HashMap;
 public class Coordinator implements Runnable {
     ;
     private static String PHASEONEIP = "127.0.0.1";
+    private static boolean PHASEONEACTIVE;
     //private static int task_transmit_port = 10000;
     //private static int task_return_port = 10001;
     private static int control_transmit_port = 10010;
@@ -41,6 +42,10 @@ public class Coordinator implements Runnable {
 
         this.control_return = zmq_context.socket(SocketType.REP);
         this.control_return.bind("tcp://*:" + control_return_port);
+
+        if (PHASEONEACTIVE){
+            control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000");
+        }
     }
 
     @Override
@@ -52,6 +57,11 @@ public class Coordinator implements Runnable {
             byte[] message_raw = this.control_return.recv();
             String message = new String(message_raw, ZMQ.CHARSET);
             String[] message_chunks = message.split(" ");
+
+            if (message_chunks[1].equals("CENTROIDS_UPDATE")){
+                System.out.println("Requesting a Centroid Update");
+                control_transmit.send("BROADCAST REQCENTROIDS");
+            }
 
             //New user joining the network, send them an id
             if (message.equals("-1 JOIN")) {
@@ -68,14 +78,9 @@ public class Coordinator implements Runnable {
                     this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
                 } else if (message_chunks[1].equals("START")) { //P1 starting
                     //TODO: What should we do when PhaseOne starts?
-                    control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000");
-
-
-                    //2nd chunk is command
-                    //3rd chunk is additional data
-
+                    control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000 ");
+                    control_transmit.send("BROADCAST CENTROIDSPORT 10100");
                 }
-
             }
 
             //Message from PhaseTwo

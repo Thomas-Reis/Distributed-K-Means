@@ -17,10 +17,13 @@ public class PhaseOne implements Runnable {
 
     private String uid;
     private int clusters_sent = 0;
+    private int K = 5;
+    private int iteration_num = 1;
 
     private ZMQ.Socket task_transmit_socket;
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
+    private ZMQ.Socket centroid_transmit;
 
     //How many points to include in a group
     private int group_size;
@@ -28,17 +31,21 @@ public class PhaseOne implements Runnable {
     //How many users to send the message to
     private int redundant_calculations;
 
+    //Keep Centroids Local
+    PointGroup iteration_centroids;
+
     //PORTS USED:
     //Task_publish = 10000
     //Task_return = 10001
     //Control_publish = 10010
     //Control_return = 10011
+    //Centroid_transmit = 10100
 
     public static void main(String[] args){
         ZMQ.Context zmq_context = ZMQ.context(2);
         DatabaseHelper db = new DatabaseHelper("root", "", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
-                "loc_x", "loc_y", "centroids", "id",
+                "loc_x", "loc_y", "last_seen" , "centroids", "id",
                 "centroid_number", "iteration", "loc_x",
                 "loc_y");
         int ClusterSize = 20;
@@ -59,6 +66,7 @@ public class PhaseOne implements Runnable {
         //Setup the transmission socket
         this.task_transmit_socket = zmq_context.socket(SocketType.PUSH);
         this.task_transmit_socket.bind("tcp://*:10000");
+        this.task_transmit_socket.setBacklog(this.redundant_calculations);
 
         //Setup the control downlink
         this.control_socket = zmq_context.socket(SocketType.SUB);
@@ -69,6 +77,17 @@ public class PhaseOne implements Runnable {
         //Setup the control uplink
         this.control_return = zmq_context.socket(SocketType.REQ);
         this.control_return.connect("tcp://localhost:10011");
+
+        //Setup the Centroid transmission uplink
+        this.centroid_transmit = zmq_context.socket(SocketType.PUB);
+        this.centroid_transmit.connect("tcp://localhost:10100");
+
+        GenCentroids();
+    }
+
+    public void GenCentroids(){
+        iteration_centroids = new PointGroup(db.getStartingCentroids(K), this.uid + " CENTROID " + iteration_num);
+
     }
 
 
@@ -79,30 +98,57 @@ public class PhaseOne implements Runnable {
 
         int clusterid = 0;
         while (true) {//this.clientDB.hasMore()) {
-            PointGroup nextCluster = new PointGroup(this.db.getPoints(this.group_size), Integer.toString(clusterid++));
-            if (nextCluster.getPoints().size() == 0) {
-                break; // Out of data, stop the loop
-            }
-            byte[] message;
-
-            //Convert the cluster to a byte array
-            ByteArrayOutputStream byte_stream = new ByteArrayOutputStream();
-            try (ObjectOutput converter = new ObjectOutputStream(byte_stream)) {
-                converter.writeObject(nextCluster);
-                converter.flush();
-                message = byte_stream.toByteArray();
-            } catch (IOException ex) { message = new byte[] {0}; }
-
-            //Make sure it converted properly
-            if (message.length != 1) {
-                System.out.print("Outputting Points...");
-                //Send the message to as many users as specified
-                for (int i=0; i < this.redundant_calculations; i++) {
-                    this.task_transmit_socket.send(message);
-                    this.clusters_sent++;
+            //if sending the next cluster of points won't cause a overflow on the Socket
+            //TODO SOLVE THIS DEADLOCK SITUATION WITH THE BACKLOG FILLING AND COORDINATOR NOT BEING LISTENED TO
+            if (task_transmit_socket.QUEUELENGTH() + this.redundant_calculations > task_transmit_socket.getBacklog()){
+                PointGroup nextCluster = new PointGroup(this.db.getPoints(this.group_size), Integer.toString(clusterid++));
+                if (nextCluster.getPoints().size() == 0) {
+                    break; // Out of data, stop the loop
                 }
-                System.out.println("Complete!");
+                byte[] message;
+
+                //Convert the cluster to a byte array
+                ByteArrayOutputStream byte_stream = new ByteArrayOutputStream();
+                try (ObjectOutput converter = new ObjectOutputStream(byte_stream)) {
+                    converter.writeObject(nextCluster);
+                    converter.flush();
+                    message = byte_stream.toByteArray();
+                } catch (IOException ex) {
+                    message = new byte[]{0};
+                }
+
+                //Make sure it converted properly
+                if (message.length != 1) {
+                    System.out.print("Outputting Points...");
+                    //Send the message to as many users as specified
+                    for (int i = 0; i < this.redundant_calculations; i++) {
+                        this.task_transmit_socket.send(message);
+                        this.clusters_sent++;
+                    }
+                    System.out.println("Complete!");
+                }
             }
+
+            //Check for messages from control
+            byte[] control = this.control_socket.recv(ZMQ.DONTWAIT);
+            if (control != null) {
+                String coordinator_message =  new String(control, ZMQ.CHARSET);
+                String[] msg_parts = coordinator_message.split(" ");
+
+                if (msg_parts[1].equals("REQCENTROIDS")) {
+
+                    //Convert the Centroids to a byte array to transmit
+                    ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();
+                    try (ObjectOutput converter = new ObjectOutputStream(centroid_byte_stream)) {
+                        converter.writeObject(nextCluster);
+                        converter.flush();
+                        message = centroid_byte_stream.toByteArray();
+                    } catch (IOException ex) { message = new byte[] {0}; }
+                    centroid_transmit.send(centroid_byte_stream.toByteArray());
+                }
+
+            }
+
         }
 
 
