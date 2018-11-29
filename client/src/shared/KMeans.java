@@ -41,28 +41,27 @@ public class KMeans {
         return p;
     }
 
-    /** Gets all the owning centroids in a point group, and returns the updated point group.
+    /** Gets all the owning centroids in a point group, and returns the updated point group. The updated point group
+     * will have the k-means addition done as well.
      *
      * @param points_group The PointGroup with the points to classify.
      * @param centroids_group The PointGroup with the centroids.
-     * @return
+     * @return The given point group with the points classified
      */
-    public static PointGroup getOwningCentroids(PointGroup points_group, PointGroup centroids_group) {
+    public static PointGroup processPointGroup(PointGroup points_group, PointGroup centroids_group) {
         // Get the ArrayList of given points
         ArrayList<Point> given_points = points_group.getPoints();
-        // The ArrayList of points that will be returned in the returned PointGroup
-        ArrayList<Point> updated_points = new ArrayList<>();
+        // Create the PointGroup that will be returned
+        PointGroup updated_points_group = new PointGroup(new ArrayList<>(), points_group.getUid());
         // Loop through the points
         for (Point point: given_points) {
             // Classify the point
             point = getOwningCentroid(point, centroids_group);
             // Add the point to the point ArrayList
-            updated_points.add(point);
+            updated_points_group.addPointToList(point);
         }
-        // Create the new point group and return it.
-        // TODO create uid properly
-        String uid = "uid";
-        return new PointGroup(updated_points, uid);
+        // Return the points group
+        return updated_points_group;
     }
 
     /** Performs the addition necessary to calculate the average for the centroid calculation. Should be run by each
