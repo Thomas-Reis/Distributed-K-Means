@@ -31,6 +31,7 @@ public class DatabaseHelper implements Serializable {
     private String table_points_id;
     private String table_points_x;
     private String table_points_y;
+    private String table_points_last_seen;
     // The view/table information for the centroids
     private String table_centroids_name;
     private String table_centroids_id;
@@ -51,6 +52,7 @@ public class DatabaseHelper implements Serializable {
      * @param table_points_id The id column name of the points table/view.
      * @param table_points_x The x location column name of the points table/view.
      * @param tables_points_y The y location column name of the points table/view.
+     * @param table_points_last_seen The column that holds the last iteration the point was seen.
      * @param table_centroids_name The table name for the centroid table.
      * @param table_centroids_id The id column name of the centroid table.
      * @param table_centroids_number The column name for the centroid number in the centroid table.
@@ -60,9 +62,9 @@ public class DatabaseHelper implements Serializable {
      */
     public DatabaseHelper(String username, String password, String server, int port_number, String db_name,
                           DatabaseType db_type, String table_points_name, String table_points_id, String table_points_x,
-                          String tables_points_y, String table_centroids_name, String table_centroids_id,
-                          String table_centroids_number, String table_centroids_iteration, String table_centroids_x,
-                          String table_centroids_y) {
+                          String tables_points_y, String table_points_last_seen, String table_centroids_name,
+                          String table_centroids_id, String table_centroids_number, String table_centroids_iteration,
+                          String table_centroids_x, String table_centroids_y) {
         this.offset = 0;
         this.username = username;
         this.password = password;
@@ -74,6 +76,7 @@ public class DatabaseHelper implements Serializable {
         this.table_points_id = table_points_id;
         this.table_points_x = table_points_x;
         this.table_points_y = tables_points_y;
+        this.table_points_last_seen = table_points_last_seen;
         this.table_centroids_name = table_centroids_name;
         this.table_centroids_id = table_centroids_id;
         this.table_centroids_number = table_centroids_number;
@@ -122,8 +125,8 @@ public class DatabaseHelper implements Serializable {
             Connection conn = getConnection();
             if (db_type.equals(DatabaseType.MYSQL)) {
                 // The sql to be done
-                String sql = String.format("SELECT %s, %s FROM %s ORDER BY %s LIMIT ? OFFSET ?;",
-                        table_points_x, table_points_y, table_points_name, table_points_id);
+                String sql = String.format("SELECT %s, %s, %s FROM %s ORDER BY %s LIMIT ? OFFSET ?;",
+                        table_points_id, table_points_x, table_points_y, table_points_name, table_points_id);
                 // Create the sql statement
                 PreparedStatement statement = conn.prepareStatement(sql);
                 statement.setInt(1, num_points);
@@ -134,10 +137,11 @@ public class DatabaseHelper implements Serializable {
                 // Loop through the results
                 while (results.next()) {
                     // Get the x and y values
+                    int point_id = results.getInt(table_points_id);
                     float loc_x = results.getFloat(table_points_x);
                     float loc_y = results.getFloat(table_points_y);
                     // Create the point
-                    Point point = new Point(loc_x, loc_y);
+                    Point point = new Point(loc_x, loc_y, point_id);
                     // Add the point to the array list
                     points.add(point);
                 }
@@ -151,6 +155,36 @@ public class DatabaseHelper implements Serializable {
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    /** Updates the database stating when a point has been seen in the given iteration.
+     *
+     * @param points_seen The list of points to mark as seen in the iteration.
+     * @param iteration_number The iteration number that the point was seen in.
+     * @return Whether or not the insertions all happened successfully.
+     */
+    public boolean updatePointsSeen(ArrayList<Point> points_seen, int iteration_number) {
+        // The connection to the database
+        Connection conn;
+        try {
+            conn = getConnection();
+            // The sql to update the point in the database
+            String sql = String.format("UPDATE %s SET %s=? WHERE %s=?",
+                    table_points_name, table_points_last_seen, table_points_id);
+            // Loop through all given points
+            for (Point point : points_seen) {
+                // Prepare the statement
+                PreparedStatement statement = conn.prepareStatement(sql);
+                statement.setInt(1, iteration_number);
+                statement.setInt(2, point.getRow_id());
+                // Execute the insert
+                statement.execute();
+            }
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -191,5 +225,45 @@ public class DatabaseHelper implements Serializable {
             return false;
         }
         return true;
+    }
+
+    /** Gets an ArrayList of points to use as starting centroids by randomly selecting k points from the database.
+     *
+     * @param k The number of centroids needed.
+     * @return The ArrayList of points.
+     */
+    public ArrayList<Point> getStartingCentroids(int k) {
+        // The connection to the database
+        Connection conn;
+        // The array list to return
+        ArrayList<Point> centroids = new ArrayList<>();
+        try {
+            // Get the connection
+            conn = getConnection();
+            // The sql to be done
+            String sql = String.format("SELECT %s, %s FROM %s ORDER BY RAND() LIMIT ?;",
+                    table_points_x, table_points_y, table_points_name);
+            // Prepare the sql statement
+            PreparedStatement statement = conn.prepareStatement(sql);
+            statement.setInt(1, k);
+            // Execute the query
+            ResultSet results = statement.executeQuery();
+            // Loop through the results
+            results.beforeFirst();
+            int id = 1;
+            while (results.next()) {
+                // Get the point data
+                double x = results.getFloat(table_points_x);
+                double y = results.getFloat(table_points_y);
+                // Insert the point into the array list
+                Point centroid = new Point(x, y);
+                centroid.setCentroid_id(id++);
+                centroids.add(centroid);
+            }
+            return centroids;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
