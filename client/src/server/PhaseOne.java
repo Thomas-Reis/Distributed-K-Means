@@ -12,7 +12,7 @@ import java.io.ObjectOutputStream;
 public class PhaseOne implements Runnable {
 
     //private ClientLink origin;
-    private ClientDatabaseConnection clientDB;
+    private DatabaseHelper db;
 
     private String uid;
     private int clusters_sent = 0;
@@ -34,8 +34,8 @@ public class PhaseOne implements Runnable {
     //Control_return = 10011
 
 
-    PhaseOne(ZMQ.Context zmq_context, ClientDatabaseConnection clientDB, String uid, int redundant_calculations, int group_size) {
-        this.clientDB = clientDB;
+    PhaseOne(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int redundant_calculations, int group_size) {
+        this.db = db;
 
         this.group_size = group_size;
         this.redundant_calculations = redundant_calculations;
@@ -63,9 +63,9 @@ public class PhaseOne implements Runnable {
         //Let the Coordinator know we've started
         this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
 
-        /*
+        int uid = 0;
         while (true) {//this.clientDB.hasMore()) {
-            PointGroup nextCluster = this.clientDB.getPoints(this.group_size);
+            PointGroup nextCluster = new PointGroup(this.db.getPoints(this.group_size), Integer.toString(uid++));
             if (nextCluster.getPoints().size() == 0) {
                 break; // Out of data, stop the loop
             }
@@ -87,7 +87,7 @@ public class PhaseOne implements Runnable {
                     this.clusters_sent++;
                 }
             }
-        }*/
+        }
 
 
         //Clean up the sockets

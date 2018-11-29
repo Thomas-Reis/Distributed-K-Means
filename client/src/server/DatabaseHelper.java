@@ -2,17 +2,21 @@ package server;
 
 import shared.Point;
 
+import java.io.Serializable;
 import java.sql.*;
 import java.util.Properties;
 import java.util.ArrayList;
 
-public class DatabaseHelper {
+public class DatabaseHelper implements Serializable {
     /** Used in specifying the type of database connection to make. Currently, only MYSQL is supported.
      *
      */
     public enum DatabaseType {
         MYSQL
     }
+
+    // The offset to retrieve values from in the database.
+    private int offset;
 
     // Database information
     private String username;
@@ -59,6 +63,7 @@ public class DatabaseHelper {
                           String tables_points_y, String table_centroids_name, String table_centroids_id,
                           String table_centroids_number, String table_centroids_iteration, String table_centroids_x,
                           String table_centroids_y) {
+        this.offset = 0;
         this.username = username;
         this.password = password;
         this.server = server;
@@ -106,11 +111,10 @@ public class DatabaseHelper {
 
     /** Gets a list of points from the database.
      *
-     * @param start_row The row to start the query on. Used in the offset of the query.
      * @param num_points The number of points to grab.
      * @return An array list of points that were retrieved or null if an sql error occurred.
      */
-    public ArrayList<Point> getPoints(int start_row, int num_points) {
+    public ArrayList<Point> getPoints(int num_points) {
         // Create an array list of points to be returned
         ArrayList<Point> points = new ArrayList<>();
         try {
@@ -123,7 +127,7 @@ public class DatabaseHelper {
                 // Create the sql statement
                 PreparedStatement statement = conn.prepareStatement(sql);
                 statement.setInt(1, num_points);
-                statement.setInt(2, start_row);
+                statement.setInt(2, offset);
                 // Performs the sql query
                 ResultSet results = statement.executeQuery();
                 results.beforeFirst();
@@ -138,6 +142,11 @@ public class DatabaseHelper {
                     points.add(point);
                 }
             }
+
+            // Change the offset value based on the number of points that were retrieved.
+            offset += points.size();
+
+            // Return the points that were found
             return points;
         } catch (SQLException e) {
             e.printStackTrace();
