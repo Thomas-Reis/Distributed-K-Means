@@ -135,8 +135,13 @@ public class PointGroup implements Serializable {
             // Add the point to the array list
             calculated_centroids.add(current_centroid);
         }
-        // Create and return a new PointGroup
-        // TODO create a proper uid
-        return new PointGroup(calculated_centroids, uid);
+
+        // Create the new uid for the centroid group
+        String[] id_breakdown = uid.split(" ");
+        // Increment the iteration number
+        id_breakdown[2] = Integer.toString(Integer.parseInt(id_breakdown[2]) + 1);
+        String new_uid = id_breakdown[0] + " CENTROID " + id_breakdown[2] ;
+        // Create and return the point group
+        return new PointGroup(calculated_centroids, new_uid);
     }
 }
