@@ -2,6 +2,7 @@ package server;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
+import shared.Point;
 import shared.PointGroup;
 
 import java.io.ByteArrayInputStream;
@@ -88,6 +89,12 @@ public class PhaseTwo implements Runnable {
                 //If cluster converted properly
                 if (cluster != null) {
                     //TODO: Process the cluster
+                    // TODO Check this, Bradon tired
+                    // Loop through the cluster's points
+                    for (Point p : cluster.getPoints()) {
+                        // Write to the database that the centroid is owned
+                        if (p.get)
+                    }
 
                     //Update the Coordinator with the id score
                     this.control_return.send(this.uid + " SCORE " + cluster.getProcessedBy() + " " + 1);
