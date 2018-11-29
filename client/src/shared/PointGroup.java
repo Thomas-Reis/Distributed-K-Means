@@ -2,15 +2,17 @@ package shared;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class PointGroup implements Serializable {
 
     private ArrayList<Point> points;
+    private HashMap<Integer, Double> centroid_sums = new HashMap<>();
     private double group_sum;
     private String uid;
     private String processed_by = "";
 
-    PointGroup(ArrayList<Point> points, String uid) {
+    public PointGroup(ArrayList<Point> points, String uid) {
         this.points = points;
         this.uid = uid;
         this.group_sum = 0;
@@ -39,6 +41,10 @@ public class PointGroup implements Serializable {
 
     public String getProcessedBy() {
         return this.processed_by;
+    }
+
+    public void addPointsToList(ArrayList<Point> new_points) {
+        points.addAll(new_points);
     }
 
 }

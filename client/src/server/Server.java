@@ -58,7 +58,7 @@ public class Server extends Observable {
 
 
         //AFTER ITERATION
-        //TODO recalculate centroids using client.KMeans updateCentroidsAverage Method
+        //TODO recalculate centroids using shared.KMeans updateCentroidsAverage Method
         //TODO check if finishing conditions are met
 
         //AFTER ALL DATA IS PROCESSED
