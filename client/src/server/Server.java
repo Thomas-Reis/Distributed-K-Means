@@ -8,7 +8,7 @@ import shared.Point;
 import java.util.ArrayList;
 import java.util.Observable;
 
-
+@Deprecated
 public class Server extends Observable {
     private static  int X_MAXIMUM = 100;
     private static int X_MINIMUM = -100;
@@ -58,7 +58,7 @@ public class Server extends Observable {
 
 
         //AFTER ITERATION
-        //TODO recalculate centroids using client.KMeans updateCentroidsAverage Method
+        //TODO recalculate centroids using shared.KMeans updateCentroidsAverage Method
         //TODO check if finishing conditions are met
 
         //AFTER ALL DATA IS PROCESSED

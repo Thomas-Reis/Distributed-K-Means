@@ -3,6 +3,7 @@ package server;
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import shared.PointGroup;
+import shared.KMeans;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
