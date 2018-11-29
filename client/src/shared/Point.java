@@ -33,6 +33,14 @@ public class Point implements Serializable {
         this.row_id = row_id;
     }
 
+    public int getRow_id() {
+        return row_id;
+    }
+
+    public void setRow_id(int row_id) {
+        this.row_id = row_id;
+    }
+
     public double getX() {
         return x;
     }

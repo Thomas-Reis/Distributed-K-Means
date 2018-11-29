@@ -16,7 +16,7 @@ public class KMeans {
      * @param centroids_group The PointGroup that contains the centroids available for the classification.
      * @return The new point which has the centroid owner assigned to it.
      */
-    public static Point getOwningCentroid(Point p, PointGroup centroids_group) {
+    private static Point getOwningCentroid(Point p, PointGroup centroids_group) {
         // The current owner of the given point, will be used to return owner
         int int_owner = -1;
         // The distance to the current closest point
@@ -56,9 +56,9 @@ public class KMeans {
         // Loop through the points
         for (Point point: given_points) {
             // Classify the point
-            point = getOwningCentroid(point, centroids_group);
+            Point classified_point = getOwningCentroid(point, centroids_group);
             // Add the point to the point ArrayList
-            updated_points_group.addPointToList(point);
+            updated_points_group.addPointToList(classified_point);
         }
         // Return the points group
         return updated_points_group;
