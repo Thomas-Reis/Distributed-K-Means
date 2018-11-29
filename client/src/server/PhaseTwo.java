@@ -89,6 +89,9 @@ public class PhaseTwo implements Runnable {
                 if (cluster != null) {
                     //TODO: Process the cluster
 
+                    //Update the Coordinator with the id score
+                    this.control_return.send(this.uid + " SCORE " + cluster.getProcessedBy() + " " + 1);
+
                     //Increment the cluster count
                     this.clusters_received++;
                 }

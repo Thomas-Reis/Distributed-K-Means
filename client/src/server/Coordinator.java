@@ -12,6 +12,8 @@ public class Coordinator implements Runnable {
     //private static int task_transmit_port = 10010;
     //private static int task_return_port = 10011;
 
+    private HashMap<Integer, Integer> client_score_map = new HashMap<>();
+
     private static int zmq_iothreads = 2;
     private static int minimum_clients = 2;
 
@@ -54,14 +56,24 @@ public class Coordinator implements Runnable {
             //Message from PhaseOne
             if (Integer.parseInt(message_chunks[0]) == this.phase_one_id && this.phase_one_id != -1) {
 
-                //Check if finished
-                if (message_chunks[1].equals("DONE")) {
+                if (message_chunks[1].equals("DONE")) { //P1 finished
                     //Send the count to phase 2
                     this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
+                } else if (message_chunks[1].equals("START")) { //P1 starting
+                    //TODO: What should we do when PhaseOne starts?
                 }
 
+            }
 
-
+            //Message from PhaseTwo
+            if (Integer.parseInt(message_chunks[0]) == this.phase_two_id) {
+                if (message_chunks[1].equals("START")) { //Starting
+                    //TODO: What do when PhaseTwo starts?
+                } else if (message_chunks[1].equals("SCORE")) { //Sent score for client
+                    this.incrementClientScore(Integer.parseInt(message_chunks[2]), Integer.parseInt(message_chunks[3]));
+                } else if (message_chunks[2].equals("DONE")) { //Finished
+                    //TODO: Do something to clean up the thing
+                }
             }
 
 
@@ -70,14 +82,32 @@ public class Coordinator implements Runnable {
 
             //Enforce minimum client amount before starting K-Means distribution
             if (this.newest_id < minimum_clients) {
-                this.control_transmit.send("BROADCAST LOWCLIENT".getBytes(ZMQ.CHARSET));
+                this.control_transmit.send("BROADCAST LONELY".getBytes(ZMQ.CHARSET));
                 continue;
             }
 
+            //Nothing's running
             if (this.phase_one_id == -1 && this.phase_two_id == -1) {
-
+                if (this.client_score_map.isEmpty()) {
+                    //TODO: Set origin to the first responding user
+                } else {
+                    //TODO: Set origin to the first responding high scoring user
+                }
             }
+
 
         }
     }
+
+    private void incrementClientScore(int client_id, int amount) {
+        //Add it to the map
+        if (client_score_map.containsKey(client_id)) { //If the client already has a score, score += value
+            int current_score = client_score_map.get(client_id);
+            client_score_map.replace(client_id, current_score + amount);
+
+        } else { //Client doesn't have score yet, score = value
+            client_score_map.put(client_id, amount);
+        }
+    }
+
 }
