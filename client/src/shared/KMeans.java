@@ -9,13 +9,14 @@ import java.util.ArrayList;
  * Includes all of the functions necessary to perform k-means related calculations.
  */
 public class KMeans {
-    /**
-     * Calculates which cluster a given point belongs to.
+
+    /** Calculates which centroid a given point belongs to.
+     *
      * @param p The point to have classified in terms of which cluster it belongs to.
-     * @param centroids The list of centroids available for the classification.
-     * @return The index of the centroid that is closest to the point in the array list.
+     * @param centroids_group The PointGroup that contains the centroids available for the classification.
+     * @return The new point which has the centroid owner assigned to it.
      */
-    public static int getOwningCentroid(Point p, ArrayList<Point> centroids) {
+    public static Point getOwningCentroid(Point p, PointGroup centroids_group) {
         // The current owner of the given point, will be used to return owner
         int int_owner = -1;
         // The distance to the current closest point
@@ -23,23 +24,50 @@ public class KMeans {
         // The distance of the point to the current centroid in the loop
         double double_current_distance;
         // Loop through all the centroids
-        for (int c = 0; c < centroids.size(); c++) {
+        ArrayList<Point> centroids = centroids_group.getPoints();
+        for (Point centroid: centroids) {
             // Check the distance to current centroid
-            double_current_distance = Math.sqrt( Math.pow(centroids.get(c).getX() - p.getX(), 2) 
-                            + Math.pow(centroids.get(c).getY() - p.getY(), 2) );
+            double_current_distance = Math.sqrt( Math.pow(centroid.getX() - p.getX(), 2)
+                            + Math.pow(centroid.getY() - p.getY(), 2) );
             if (double_current_distance < double_closest_distance) {
                 // assign the current centroid as the owner centroid
-                int_owner = c;
+                int_owner = centroid.getCentroid_id();
                 double_closest_distance = double_current_distance;
             }
         }
-        // Return the closest centroid
-        return int_owner;
+        // Set the point's owner
+        p.setCentroid_id(int_owner);
+        // Return the point
+        return p;
     }
 
-    /**
-     * Performs the addition necessary to calculate the average for the centroid calculation. Should be run by each
+    /** Gets all the owning centroids in a point group, and returns the updated point group. The updated point group
+     * will have the k-means addition done as well.
+     *
+     * @param points_group The PointGroup with the points to classify.
+     * @param centroids_group The PointGroup with the centroids.
+     * @return The given point group with the points classified
+     */
+    public static PointGroup processPointGroup(PointGroup points_group, PointGroup centroids_group) {
+        // Get the ArrayList of given points
+        ArrayList<Point> given_points = points_group.getPoints();
+        // Create the PointGroup that will be returned
+        PointGroup updated_points_group = new PointGroup(new ArrayList<>(), points_group.getUid());
+        // Loop through the points
+        for (Point point: given_points) {
+            // Classify the point
+            point = getOwningCentroid(point, centroids_group);
+            // Add the point to the point ArrayList
+            updated_points_group.addPointToList(point);
+        }
+        // Return the points group
+        return updated_points_group;
+    }
+
+    /** Performs the addition necessary to calculate the average for the centroid calculation. Should be run by each
      * client with their list of owned points.
+     *
+     * @deprecated This is now done by PointGroups.
      * @param list_centroid_points A list containing the lists of points that belong to each centroid.
      *                             IMPORTANT: must contain a list for each centroid, even if there is no points in a
      *                             centroid!
@@ -47,6 +75,7 @@ public class KMeans {
      *         x addition, y addition, number of points added. Will give a double[] of 0, 0, 0 if the centroid list was
      *         empty.
      */
+    @Deprecated
     public static ArrayList<double[]> updateCentroidsAddition(ArrayList<ArrayList<Point>> list_centroid_points) {
         // The array list that will keep track of progress during the function to be returned later
         ArrayList<double[]> additions = new ArrayList<>();
@@ -86,12 +115,13 @@ public class KMeans {
         return additions;
     }
 
-    /**
-     * Performs the average component required to recalculate the centroid locations. Should be run on the main server.
+    /** Performs the average component required to recalculate the centroid locations. Should be run on the main server.
+     *
+     * @deprecated This is now handled in PointGroup
      * @param client_additions An array list of array lists generated by the updateCentroidsAddition by each client
-     *                           server.
      * @return An array list of the updated centroids.
      */
+    @Deprecated
     public static ArrayList<Point> updateCentroidsAverage(ArrayList<ArrayList<double[]>> client_additions) {
         // Temporary list that holds the total values before dividing and calculating the new centroids
         ArrayList<double[]> temp_total_centroid_additions = new ArrayList<>();
