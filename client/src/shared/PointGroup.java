@@ -2,10 +2,12 @@ package shared;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class PointGroup implements Serializable {
 
     private ArrayList<Point> points;
+    private HashMap<Integer, Double> centroid_sums = new HashMap<>();
     private double group_sum;
     private String uid;
     private String processed_by = "";
