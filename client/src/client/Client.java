@@ -3,10 +3,7 @@ package client;
 import org.zeromq.ZContext;
 import shared.Point;
 
-import java.io.DataInputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -23,32 +20,35 @@ public class Client {
     static int PORT = 5555;
     private static ZMQ.Socket client_sub;
     private static ZMQ.Socket client_req;
+    private static ZMQ.Socket client_taskboard;
     private static ZMQ.Context zmq_context;
 
     public static void main(String[] args) throws InterruptedException {
         zmq_context = ZMQ.context(3);
         connect_to_socket(SERVERIP);
 
-        /*
-        try {
-            int num_points = Integer.parseInt(r.readLine());
-            System.out.println(num_points);
-            for (int i=0;i<num_points;i++){
-                Point tmp_point = (Point)Obj_r.readObject();
-                AssignedPoints.add(tmp_point);
+        while(true) {
+            byte[] server_msg = client_sub.recv();
+            String uid_rep_string = new String(server_msg, ZMQ.CHARSET);
+            String[] reply_msg = uid_rep_string.split(" ");
+            if (reply_msg[1].equals("PHASEONEREADY")) {
+                String task_board_IP = reply_msg[2];
+                String task_board_port = reply_msg[3];
+                client_taskboard = zmq_context.socket(SocketType.PULL);
+                client_taskboard.connect("tcp://" + task_board_IP + ":" + task_board_port);
+                server_msg = client_taskboard.recv();
+                try {
+                    ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(server_msg);
+                    ObjectInputStream is = new ObjectInputStream(Input_Byte_Converter);
+                    PointGroup MyPoints = (PointGroup) is.readObject();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(-300);
+                } finally {
+                    client_taskboard.close();
+                }
             }
-        } catch (Exception e){
-            e.printStackTrace();
-            System.exit(-100);
-        }*/
-
-        //NEW CODE
-        while(true){
-            while(AssignedPoints.size() > 0){
-                AssignedPoints.clear();
-                System.out.println("Received Points and Cleared Them");
-            }
-            Thread.sleep(20);
+            System.out.println("Break Here");
         }
     }
 
@@ -67,8 +67,10 @@ public class Client {
 
             client_sub = zmq_context.socket(SocketType.SUB);
             client_sub.connect("tcp://" + ip + ":10010");
+            // setting up the broadcast channel
             client_sub.subscribe("BROADCAST");
-            client_sub.subscribe(reply_msg[0]);
+            // setting up the client upload socket
+            client_sub.subscribe(Integer.toString(client_uid));
 
 
 

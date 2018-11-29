@@ -9,6 +9,7 @@ public class Coordinator implements Runnable {
 
     private static int control_transmit_port = 10000;
     private static int control_return_port = 10001;
+    private static String PHASEONEIP = "127.0.0.1";
     //private static int task_transmit_port = 10010;
     //private static int task_return_port = 10011;
 
@@ -66,6 +67,12 @@ public class Coordinator implements Runnable {
                     this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
                 } else if (message_chunks[1].equals("START")) { //P1 starting
                     //TODO: What should we do when PhaseOne starts?
+                    control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000");
+
+
+                    //2nd chunk is command
+                    //3rd chunk is additional data
+
                 }
 
             }
