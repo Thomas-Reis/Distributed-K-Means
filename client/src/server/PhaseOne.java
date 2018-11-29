@@ -63,8 +63,11 @@ public class PhaseOne implements Runnable {
         //Let the Coordinator know we've started
         this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
 
-        while (this.clientDB.hasMore()) {
+        while (true) {//this.clientDB.hasMore()) {
             PointGroup nextCluster = this.clientDB.getPoints(this.group_size);
+            if (nextCluster.getPoints().size() == 0) {
+                break; // Out of data, stop the loop
+            }
             byte[] message;
 
             //Convert the cluster to a byte array
