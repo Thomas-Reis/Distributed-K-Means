@@ -40,6 +40,7 @@ public class PhaseTwo implements Runnable {
         //Setup the control downlink
         this.control_socket = zmq_context.socket(SocketType.SUB);
         this.control_socket.connect("tcp://localhost:10010");
+        this.control_socket.subscribe("BROADCAST");
         this.control_socket.subscribe(this.uid);
 
         //Setup the control uplink
@@ -101,14 +102,15 @@ public class PhaseTwo implements Runnable {
             }
 
         }
-        //Let the Coordinator know we've finished
-        this.control_return.send((this.uid +" DONE").getBytes(ZMQ.CHARSET));
-
         //Clean up our mess
         this.task_receive_socket.close();
         this.control_socket.close();
+
+        //Let the Coordinator know we've finished
+        this.control_return.send((this.uid + " DONE").getBytes(ZMQ.CHARSET));
+
+        //Close the coordinator socket & die
         this.control_return.close();
-
-
+        return;
     }
 }

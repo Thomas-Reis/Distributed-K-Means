@@ -13,7 +13,6 @@ public class PhaseOne implements Runnable {
 
     //private ClientLink origin;
     private ClientDatabaseConnection clientDB;
-    private CentroidDatabaseConnection centroidDB;
 
     private String uid;
     private int clusters_sent = 0;
@@ -35,9 +34,8 @@ public class PhaseOne implements Runnable {
     //Control_return = 10011
 
 
-    PhaseOne(ZMQ.Context zmq_context, ClientDatabaseConnection clientDB, CentroidDatabaseConnection centroidDB, String uid, int redundant_calculations, int group_size) {
+    PhaseOne(ZMQ.Context zmq_context, ClientDatabaseConnection clientDB, String uid, int redundant_calculations, int group_size) {
         this.clientDB = clientDB;
-        this.centroidDB = centroidDB;
 
         this.group_size = group_size;
         this.redundant_calculations = redundant_calculations;
@@ -51,6 +49,7 @@ public class PhaseOne implements Runnable {
         //Setup the control downlink
         this.control_socket = zmq_context.socket(SocketType.SUB);
         this.control_socket.connect("tcp://localhost:10010");
+        this.control_socket.subscribe("BROADCAST");
         this.control_socket.subscribe(this.uid);
 
         //Setup the control uplink
@@ -86,12 +85,15 @@ public class PhaseOne implements Runnable {
             }
         }
 
-        //Let the Coordinator know we've finished
-        this.control_return.send((this.uid +" DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));
 
-        //Clean up our mess
+        //Clean up the sockets
         this.task_transmit_socket.close();
         this.control_socket.close();
+
+        //Let the Coordinator know we've finished
+        this.control_return.send((this.uid + " DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));
+
+        //Close the coordinator socket & die
         this.control_return.close();
         return;
     }
