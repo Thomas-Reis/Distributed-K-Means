@@ -8,7 +8,7 @@ import shared.Point;
 import java.util.ArrayList;
 import java.util.Observable;
 
-
+@Deprecated
 public class Server extends Observable {
     private static  int X_MAXIMUM = 100;
     private static int X_MINIMUM = -100;

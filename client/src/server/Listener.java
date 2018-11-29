@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+@Deprecated
 public class Listener extends Thread{
     //public static ClientPool current_pool;
 
