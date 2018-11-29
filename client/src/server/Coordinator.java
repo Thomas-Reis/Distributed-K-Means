@@ -93,10 +93,10 @@ public class Coordinator implements Runnable {
             // --- END OF MESSAGE HANDLING ---
 
             //Enforce minimum client amount before starting K-Means distribution
-            if (this.newest_id < minimum_clients) {
-                this.control_transmit.send("BROADCAST LONELY".getBytes(ZMQ.CHARSET));
-                continue;
-            }
+            //if (this.newest_id < minimum_clients) {
+            //    this.control_transmit.send("BROADCAST LONELY".getBytes(ZMQ.CHARSET));
+            //    continue;
+            //}
 
             //Nothing's running
             if (this.phase_one_id == -1 && this.phase_two_id == -1) {
