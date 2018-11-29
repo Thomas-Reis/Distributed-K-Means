@@ -11,6 +11,7 @@ import java.io.*;
 /**
  * Holds all information pertaining to an individual client.
  */
+@Deprecated
 public class ClientObject {
     // transient is used to ignore fields when converting to json using Gson library
     private transient PrintWriter out;
