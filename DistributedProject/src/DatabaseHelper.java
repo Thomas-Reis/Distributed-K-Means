@@ -35,9 +35,20 @@ public class DatabaseHelper {
      *
      * @param username The username to use to connect to the database.
      * @param password The password to use to connect to the database.
-     * @param server The server hosting the database.
-     * @param port_number The port number used to connect to the database.
-     * @param connection_type The type of database.
+     * @param server The server url.
+     * @param port_number The port to connect through.
+     * @param db_name The name of the database.
+     * @param db_type The type of database.
+     * @param table_points_name The table/view name for the points table/view.
+     * @param table_points_id The id column name of the points table/view.
+     * @param table_points_x The x location column name of the points table/view.
+     * @param tables_points_y The y location column name of the points table/view.
+     * @param table_centroids_name The table name for the centroid table.
+     * @param table_centroids_id The id column name of the centroid table.
+     * @param table_centroids_number The column name for the centroid number in the centroid table.
+     * @param table_centroids_iteration The iteration column name of the centroid table.
+     * @param table_centroids_x The x location column name of the centroid table.
+     * @param table_centroids_y The y location column name of the centroid table.
      */
     public DatabaseHelper(String username, String password, String server, int port_number, String db_name,
                           DatabaseType db_type, String table_points_name, String table_points_id, String table_points_x,
@@ -56,7 +67,7 @@ public class DatabaseHelper {
         this.table_points_y = tables_points_y;
         this.table_centroids_name = table_centroids_name;
         this.table_centroids_id = table_centroids_id;
-;       this.table_centroids_number = table_centroids_number;
+        this.table_centroids_number = table_centroids_number;
         this.table_centroids_iteration = table_centroids_iteration;
         this.table_centroids_x = table_centroids_x;
         this.table_centroids_y = table_centroids_y;
@@ -67,7 +78,7 @@ public class DatabaseHelper {
      * @return The database connection.
      * @throws SQLException Thrown if there is an error making the connection.
      */
-    public Connection getConnection() throws SQLException {
+    private Connection getConnection() throws SQLException {
         // The connection object
         Connection conn = null;
         // The properties needed to connect to the database
@@ -80,7 +91,8 @@ public class DatabaseHelper {
             conn = DriverManager.getConnection(
                     "jdbc:MYSQL://"
                             + this.server + ":"
-                            + Integer.toString(this.port_number) + "/",
+                            + Integer.toString(this.port_number) + "/"
+                            + this.db_name,
                     properties
             );
         }
@@ -138,7 +150,7 @@ public class DatabaseHelper {
      */
     public boolean insertCentroids(ArrayList<Point> centroids, int iteration) {
         // The connection to the database
-        Connection conn = null;
+        Connection conn;
         try {
             // Get the connection
             conn = getConnection();
@@ -167,11 +179,11 @@ public class DatabaseHelper {
                 }
                 // Commit the changes
                 conn.commit();
-                return true;
             }
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
+        return true;
     }
 }
