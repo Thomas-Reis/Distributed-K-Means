@@ -2,6 +2,7 @@ package shared;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -143,5 +144,9 @@ public class PointGroup implements Serializable {
         String new_uid = id_breakdown[0] + " CENTROID " + id_breakdown[2] ;
         // Create and return the point group
         return new PointGroup(calculated_centroids, new_uid);
+    }
+
+    public boolean equals(PointGroup pg) {
+        return this.centroid_sums.equals(pg);
     }
 }
