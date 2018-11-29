@@ -136,14 +136,14 @@ public class PhaseOne implements Runnable {
                 String[] msg_parts = coordinator_message.split(" ");
 
                 if (msg_parts[1].equals("REQCENTROIDS")) {
-
+                    byte[] msg_bytes;
                     //Convert the Centroids to a byte array to transmit
                     ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();
                     try (ObjectOutput converter = new ObjectOutputStream(centroid_byte_stream)) {
-                        converter.writeObject(nextCluster);
+                        converter.writeObject(iteration_centroids);
                         converter.flush();
-                        message = centroid_byte_stream.toByteArray();
-                    } catch (IOException ex) { message = new byte[] {0}; }
+                        msg_bytes = centroid_byte_stream.toByteArray();
+                    } catch (IOException ex) { msg_bytes = new byte[] {0}; }
                     centroid_transmit.send(centroid_byte_stream.toByteArray());
                 }
 
