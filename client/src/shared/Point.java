@@ -8,8 +8,7 @@ import java.io.Serializable;
 public class Point implements Serializable {
     private double x;
     private double y;
-    private double centroid_x;
-    private double centroid_y;
+    private int centroid_id;
 
     /**
      * Creates a new point with a given x, y value.
@@ -29,19 +28,7 @@ public class Point implements Serializable {
         return y;
     }
 
-    public double getCentroidX() {
-        return this.centroid_x;
-    }
+    public int getCentroid_id(){ return this.centroid_id; }
 
-    public double getCentroidY() {
-        return this.centroid_y;
-    }
-
-    public void setCentroidX(double x) {
-        this.centroid_x = x;
-    }
-
-    public void setCentroidY(double y) {
-        this.centroid_y = y;
-    }
+    public void setCentroid_id(int id){ this.centroid_id = id; }
 }
