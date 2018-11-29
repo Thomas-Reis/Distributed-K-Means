@@ -52,4 +52,9 @@ public class Point implements Serializable {
     public int getCentroid_id(){ return this.centroid_id; }
 
     public void setCentroid_id(int id){ this.centroid_id = id; }
+
+    public boolean equals(Point p) {
+        return this.x == p.getX() && this.y == p.getY() &&
+                this.centroid_id == p.getCentroid_id() && this.row_id == p.getRow_id();
+    }
 }

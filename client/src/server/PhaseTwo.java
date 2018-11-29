@@ -8,6 +8,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class PhaseTwo implements Runnable {
@@ -17,11 +18,18 @@ public class PhaseTwo implements Runnable {
     private int expected_points = Integer.MAX_VALUE;
     private int points_received = 0;
 
+    private int k;
+
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
     private ZMQ.Socket task_receive_socket;
 
+    // The hash maps that will store received point groups for redundancy checks
     private HashMap<String, PointGroup> point_groups_received = new HashMap<>();
+    private HashMap<String, PointGroup> point_groups_received_collision = new HashMap<>();
+
+    // The total Point Group used to hold the summations of the centroids
+    private PointGroup total_point_group = new PointGroup(new ArrayList<>(), "TODO replace uid string");
 
     //PORTS USED:
     //Task_publish = 10000
@@ -30,10 +38,10 @@ public class PhaseTwo implements Runnable {
     //Control_return = 10011
 
 
-    PhaseTwo(ZMQ.Context zmq_context, DatabaseHelper db, String uid) {
+    PhaseTwo(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int k) {
         this.uid = uid;
-
         this.db = db;
+        this.k = k;
 
         //Setup the transmission socket
         this.task_receive_socket = zmq_context.socket(SocketType.PULL);
@@ -59,9 +67,9 @@ public class PhaseTwo implements Runnable {
         //Let the Coordinator know we've started
         this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
 
+        // Loop through all iterations
         int iteration = 1;
-        // TODO iteration number has been hardcoded to 10
-        while (iteration < 10) {
+        while (iteration <= k) {
             this.control_return.send((this.uid + " ITERATION " + iteration).getBytes(ZMQ.CHARSET));
 
             //Check for messages from control
@@ -81,48 +89,72 @@ public class PhaseTwo implements Runnable {
             byte[] cluster_raw = this.task_receive_socket.recv(ZMQ.DONTWAIT);
             if (cluster_raw != null) {
 
-                PointGroup cluster;
-
+                // The received point group
+                PointGroup new_point_group;
                 //Convert from bytes
                 ByteArrayInputStream byte_stream = new ByteArrayInputStream(cluster_raw);
                 try (ObjectInput converter = new ObjectInputStream(byte_stream)) {
-                    cluster = (PointGroup) converter.readObject();
-                } catch (IOException | ClassNotFoundException ex) { cluster = null; }
+                    new_point_group = (PointGroup) converter.readObject();
+                } catch (IOException | ClassNotFoundException ex) { new_point_group = null; }
 
                 //If cluster converted properly
-                if (cluster != null) {
-                    //TODO: Process the cluster
-                    // TODO double check for tired Bradon
-                    // Check if the uid has been received already
-                    if (point_groups_received.containsKey(cluster.getUid())) {
-                        // Get the value from the hashed map
-                        PointGroup old_group = point_groups_received.get(cluster.getUid());
-                        // Append the old group's points into the new cluster
-                        cluster.addPointsToList(old_group.getPoints());
-                        point_groups_received.replace(cluster.getUid(), cluster);
+                if (new_point_group != null) {
+
+                    // Check to see if the point is in the received point group for redundancy check
+                    String received_id = new_point_group.getUid();
+                    if (point_groups_received.containsKey(received_id)) {
+                        // Holds if the received group passes redundancy checks
+                        boolean redundancy_pass = false;
+                        PointGroup old_group = point_groups_received.get(received_id);
+                        // Check to see if it is in the collision map, meaning 2 were received with different values
+                        if (point_groups_received_collision.containsKey(received_id)) {
+                            PointGroup old_group_collision = point_groups_received_collision.get(received_id);
+                            // If either of the old values matches the passed value, the redundancy check passed
+                            if (old_group.equals(new_point_group) || old_group_collision.equals(new_point_group)) {
+                                redundancy_pass = true;
+                            }
+                            // Sets values to null regardless of success or failure
+                            point_groups_received.replace(received_id, null);
+                            point_groups_received_collision.replace(received_id, null);
+                        }
+                        // Check to see if the first hash map value is equal
+                        else if (old_group.equals(new_point_group)) {
+                            redundancy_pass = true;
+                            point_groups_received.replace(received_id, null);
+                            point_groups_received_collision.replace(received_id, null);
+                        }
+                        // If none of the passes above succeeded, then the second hash map should be written to
+                        else {
+                            point_groups_received_collision.put(received_id, new_point_group);
+                        }
+                        // If the redundancy pass was successful, then the received group can be fully processed
+                        if (redundancy_pass) {
+                            // Add the received group to phase 2's total
+                            total_point_group.combinePointGroup(new_point_group);
+                            // Increment the total points received by the number of points in the point group
+                            points_received += new_point_group.getPoints().size();
+                        }
                     }
-                    // Put the cluster group into the hash map if has already been received
+                    // If it wasn't in the first hash map, it must be added to it
                     else {
-                        point_groups_received.put(cluster.getUid(), cluster);
+                        point_groups_received.put(received_id, new_point_group);
                     }
 
                     //Update the Coordinator with the id score
-                    this.control_return.send(this.uid + " SCORE " + cluster.getProcessedBy() + " " + 1);
-
-                    //Increment the number of points received
-                    this.points_received += cluster.getPoints().size();
+                    this.control_return.send(this.uid + " SCORE " + new_point_group.getProcessedBy() + " " + 1);
                 }
             }
 
             // Check if the number of points received is the expected number
             if (this.points_received >= this.expected_points) {
-                // TODO perform the kmeans division on the set
+                // Recalculate the centroids
+                PointGroup new_centroids = total_point_group.getNewCentroids();
+
+                // Write the centroids into the database
+                db.insertCentroids(new_centroids.getPoints(), iteration);
+
+                // Increment the iteration, as this iteration is now completed
                 iteration++;
-                // Check to see if return type has been met
-                // TODO for now this will be simply if the number of iterations needed has been met. HARDCODED TO 10!
-                if (iteration >= 10) {
-                    // TODO Perform return type here
-                }
             }
         }
 
