@@ -170,15 +170,8 @@ public class DatabaseHelper {
                     statement.setDouble(3, current_centroid.getX());
                     statement.setDouble(4, current_centroid.getY());
                     // Insert the point
-                    boolean success = statement.execute();
-                    // Check to make sure the point inserted correctly
-                    if (!success) {
-                        conn.rollback();
-                        return false;
-                    }
+                    statement.execute();
                 }
-                // Commit the changes
-                conn.commit();
             }
         } catch (SQLException e) {
             e.printStackTrace();
