@@ -25,6 +25,11 @@ public class Coordinator implements Runnable {
     private ZMQ.Socket control_return;
     private ZMQ.Context zmq_context;
 
+    public static void main(String[] args){
+        Coordinator init = new Coordinator();
+        init.run();
+    }
+
     Coordinator() {
 
         this.zmq_context = ZMQ.context(zmq_iothreads);
