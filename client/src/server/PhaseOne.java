@@ -20,6 +20,10 @@ public class PhaseOne implements Runnable {
     private int K = 5;
     private int iteration_num = 1;
 
+    private byte[] next_transmission;
+    private boolean transmitted;
+    private int redundant_sends_left;
+
     private ZMQ.Socket task_transmit_socket;
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
@@ -91,43 +95,67 @@ public class PhaseOne implements Runnable {
     }
 
 
+    private void attemptTransmitPointGroup() {
+        System.out.print("Outputting Points...");
+        this.transmitted = this.task_transmit_socket.send(this.next_transmission, ZMQ.DONTWAIT);
+        this.redundant_sends_left--;
+        System.out.println("Complete!");
+    }
+
+    private void getNextGroup() throws IndexOutOfBoundsException {
+        if (this.transmitted) {
+
+            PointGroup nextCluster = new PointGroup(this.db.getPoints(this.group_size), Integer.toString(clusterid++));
+            if (nextCluster.getPoints().size() == 0) {
+               throw new IndexOutOfBoundsException(); // Out of data, stop the loop
+            }
+            byte[] message;
+
+            //Convert the cluster to a byte array
+            ByteArrayOutputStream byte_stream = new ByteArrayOutputStream();
+            try (ObjectOutput converter = new ObjectOutputStream(byte_stream)) {
+                converter.writeObject(nextCluster);
+                converter.flush();
+                message = byte_stream.toByteArray();
+            } catch (IOException ex) {
+                message = new byte[]{0};
+            }
+
+            //Make sure it converted properly
+            if (message.length != 1) {
+
+                System.out.println("Set the PointGroup");
+                this.redundant_sends_left = this.redundant_calculations;
+                this.next_transmission = message;
+
+            }
+
+        }
+    }
+
     @Override
     public void run() {
         //Let the Coordinator know we've started
         this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
 
         int clusterid = 0;
-        while (true) {//this.clientDB.hasMore()) {
-            //if sending the next cluster of points won't cause a overflow on the Socket
-            //TODO SOLVE THIS DEADLOCK SITUATION WITH THE BACKLOG FILLING AND COORDINATOR NOT BEING LISTENED TO
-            if (task_transmit_socket.QUEUELENGTH() + this.redundant_calculations > task_transmit_socket.getBacklog()){
-                PointGroup nextCluster = new PointGroup(this.db.getPoints(this.group_size), Integer.toString(clusterid++));
-                if (nextCluster.getPoints().size() == 0) {
-                    break; // Out of data, stop the loop
-                }
-                byte[] message;
+        while (true) {
 
-                //Convert the cluster to a byte array
-                ByteArrayOutputStream byte_stream = new ByteArrayOutputStream();
-                try (ObjectOutput converter = new ObjectOutputStream(byte_stream)) {
-                    converter.writeObject(nextCluster);
-                    converter.flush();
-                    message = byte_stream.toByteArray();
-                } catch (IOException ex) {
-                    message = new byte[]{0};
-                }
-
-                //Make sure it converted properly
-                if (message.length != 1) {
-                    System.out.print("Outputting Points...");
-                    //Send the message to as many users as specified
-                    for (int i = 0; i < this.redundant_calculations; i++) {
-                        this.task_transmit_socket.send(message);
-                        this.clusters_sent++;
-                    }
-                    System.out.println("Complete!");
+            //If we've completely sent the last PointGroup
+            if (this.redundant_sends_left == 0) {
+                //Get the next group, break if no data left
+                try {
+                    this.getNextGroup();
+                } catch (NullPointerException ex) {
+                    break;
                 }
             }
+
+            //If there's something to send
+            if (this.redundant_sends_left != 0) {
+                attemptTransmitPointGroup();
+            }
+
 
             //Check for messages from control
             byte[] control = this.control_socket.recv(ZMQ.DONTWAIT);
