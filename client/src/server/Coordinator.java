@@ -100,6 +100,8 @@ public class Coordinator implements Runnable {
             //Message from PhaseOne
             if (Integer.parseInt(message_chunks[0]) == this.phase_one_id && this.phase_one_id != -1) {
                 if (message_chunks[1].equals("DONE")) { //P1 finished
+                    //tell the clients to stop calculations
+                    this.control_transmit.send("BROADCAST DONE");
                     //Send the count to phase 2
                     this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
                 } else if (message_chunks[1].equals("START")) { //P1 starting

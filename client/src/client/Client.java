@@ -93,8 +93,7 @@ public class Client {
                         Input_Byte_Converter = new ByteArrayInputStream(server_msg);
                         ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
                         recieved_centroids = (PointGroup) Byte_Translator.readObject();
-                    } else if (msg_parts[1].equals("COUNT")) {
-                        //TODO determine what to do when the iteration is complete
+                    } else if (msg_parts[1].equals("DONE")) {
                         //the iteration is complete
                         break;
                     }
