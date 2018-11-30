@@ -29,6 +29,8 @@ public class Coordinator implements Runnable {
     private ZMQ.Socket control_transmit;
     private ZMQ.Socket control_return;
     private ZMQ.Socket collector_receive;
+    private ZMQ.Socket phaseone_send;
+    private ZMQ.Socket phaseone_receive;
     private ZMQ.Context zmq_context;
 
     public static void main(String[] args){
@@ -49,6 +51,12 @@ public class Coordinator implements Runnable {
 
         this.collector_receive = zmq_context.socket(SocketType.REP);
         this.collector_receive.bind("tcp://*:10101");
+
+        phaseone_receive = zmq_context.socket(SocketType.PULL);
+        phaseone_receive.connect("tcp://*:1010");
+
+        phaseone_send = zmq_context.socket(SocketType.PUSH);
+        phaseone_send.connect("tcp://*:1010");
 
     }
 
@@ -104,18 +112,17 @@ public class Coordinator implements Runnable {
                 if (message_chunks[1].equals("DONE")) { //P1 finished
                     //tell the clients to stop calculations
                     this.control_transmit.send("BROADCAST DONE");
-                    this.control_transmit.send("OK");
                     //Send the count to phase 2
                     //this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
                 } else if (message_chunks[1].equals("START")) { //P1 starting
                     //TODO: What should we do when PhaseOne starts?
                     this.control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000");
-                    byte[] centroid_return = this.control_return.recv();
+                    byte[] centroid_return = this.phaseone_receive.recv();
                     ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(centroid_return);
                     try {
                         ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
                         Recv_Centroids = (PointGroup) Byte_Translator.readObject();
-                        this.control_return.send("SUCCESS");
+                        //this.control_return.send("SUCCESS");
                         PHASEONEACTIVE = true;
                     } catch(Exception e){
                         System.err.println("Error Parsing Centroids");

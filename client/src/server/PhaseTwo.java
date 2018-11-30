@@ -69,9 +69,35 @@ public class PhaseTwo implements Runnable {
         this.control_return = zmq_context.socket(SocketType.REQ);
         this.control_return.connect("tcp://localhost:10011");
 
-        this.coordinator_link = zmq_context.socket(SocketType.DEALER.REQ);
+        this.coordinator_link = zmq_context.socket(SocketType.REQ);
         this.coordinator_link.connect("tcp://localhost:10101");
 
+    }
+
+    public void reset_sockets(){
+        task_receive_socket.close();
+        control_socket.close();
+        control_return.close();
+        coordinator_link.close();
+
+        ZMQ.Context C = ZMQ.context(3);
+        //Setup the transmission socket
+        this.task_receive_socket = C.socket(SocketType.PULL);
+        //this.task_receive_socket.setBacklog(3); //Allow only 3 messages on local queue
+        this.task_receive_socket.bind("tcp://*:10001");
+
+        //Setup the control downlink
+        this.control_socket = C.socket(SocketType.SUB);
+        this.control_socket.connect("tcp://localhost:10010");
+        this.control_socket.subscribe("BROADCAST");
+        this.control_socket.subscribe(this.uid);
+
+        //Setup the control uplink
+        this.control_return = C.socket(SocketType.REQ);
+        this.control_return.connect("tcp://localhost:10011");
+
+        this.coordinator_link = C.socket(SocketType.DEALER.REQ);
+        this.coordinator_link.connect("tcp://localhost:10101");
     }
 
 

@@ -29,6 +29,8 @@ public class PhaseOne implements Runnable {
     private ZMQ.Socket task_transmit_socket;
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
+    private ZMQ.Socket coordinator_send;
+    private ZMQ.Socket coordinator_receive;
 
     //How many points to include in a group
     private int group_size;
@@ -83,12 +85,28 @@ public class PhaseOne implements Runnable {
         this.control_return = zmq_context.socket(SocketType.REQ);
         this.control_return.connect("tcp://localhost:10011");
 
+        coordinator_send = zmq_context.socket(SocketType.PUSH);
+        coordinator_send.connect("tcp://*:1010");
+
+        coordinator_receive = zmq_context.socket(SocketType.PULL);
+        coordinator_receive.connect("tcp://*:1010");
+
         GenCentroids();
     }
 
     public void GenCentroids() {
         iteration_centroids = new PointGroup(db.getStartingCentroids(K), this.uid + " CENTROID " + iteration_num);
 
+    }
+
+    public void reset_sockets(){
+        control_return.close();
+
+        ZMQ.Context C = ZMQ.context(6);
+
+        //Setup the control uplink
+        this.control_return = C.socket(SocketType.REQ);
+        this.control_return.connect("tcp://localhost:10011");
     }
 
 
@@ -136,7 +154,7 @@ public class PhaseOne implements Runnable {
     public void run() {
         //Let the Coordinator know we've started
         this.control_return.send((this.uid + " START").getBytes(ZMQ.CHARSET));
-        this.control_return.recv();
+        reset_sockets();
         byte[] msg_bytes;
         //Convert the Centroids to a byte array to transmit
         ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();
@@ -149,8 +167,7 @@ public class PhaseOne implements Runnable {
         }
         if (msg_bytes.length != 1) {
             System.out.println("Sending Centroids");
-            this.control_return.send(msg_bytes, ZMQ.DONTWAIT);
-            this.control_return.recv();
+            this.coordinator_send.send(msg_bytes, ZMQ.DONTWAIT);
         }
         this.transmitted = true;
 
