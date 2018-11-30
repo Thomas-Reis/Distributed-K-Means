@@ -46,9 +46,6 @@ public class Coordinator implements Runnable {
         this.control_return = zmq_context.socket(SocketType.REP);
         this.control_return.bind("tcp://*:" + control_return_port);
 
-        if (PHASEONEACTIVE){
-            control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000");
-        }
     }
 
     public static PointGroup convert_to_PointGroup(byte[] msg) {
@@ -93,6 +90,9 @@ public class Coordinator implements Runnable {
                 System.out.println("Recieved a Client, Assigned ID " + this.newest_id);
                 String response = (this.newest_id++) + " GOOD";
                 this.control_return.send(response.getBytes(ZMQ.CHARSET));
+                if (PHASEONEACTIVE){
+                    control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000");
+                }
             }
 
             //Message from PhaseOne
@@ -112,6 +112,7 @@ public class Coordinator implements Runnable {
                         ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
                         Recv_Centroids = (PointGroup) Byte_Translator.readObject();
                         this.control_return.send("SUCCESS");
+                        PHASEONEACTIVE = true;
                     } catch(Exception e){
                         System.err.println("Error Parsing Centroids");
                     }

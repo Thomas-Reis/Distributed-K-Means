@@ -139,12 +139,20 @@ public class Client {
 
     public static void connect_to_socket(String ip) {
         try {
+            client_sub = zmq_context.socket(SocketType.SUB);
+            client_sub.connect("tcp://" + ip + ":" + control_transmit_port);
+            // setting up the broadcast channel
+            client_sub.subscribe("BROADCAST");
+            // setting up the client upload socket
+            client_sub.subscribe(Integer.toString(client_uid));
+
             client_req = zmq_context.socket(SocketType.REQ);
             client_req.connect("tcp://" + ip + ":" + control_return_port);
             String tmp_msg = "-1 JOIN";
             client_req.send(tmp_msg.getBytes(ZMQ.CHARSET), 0);
             byte[] uid_rep = client_req.recv();
             System.out.println("Connecting to Coordinator");
+
             String uid_rep_string = new String(uid_rep, ZMQ.CHARSET);
             String[] reply_msg = uid_rep_string.split(" ");
             if (reply_msg[1].equals("GOOD")) {
@@ -152,12 +160,6 @@ public class Client {
             }
             System.out.println("Assigned client ID " + client_uid);
 
-            client_sub = zmq_context.socket(SocketType.SUB);
-            client_sub.connect("tcp://" + ip + ":" + control_transmit_port);
-            // setting up the broadcast channel
-            client_sub.subscribe("BROADCAST");
-            // setting up the client upload socket
-            client_sub.subscribe(Integer.toString(client_uid));
 
 
         } catch (Exception e) {

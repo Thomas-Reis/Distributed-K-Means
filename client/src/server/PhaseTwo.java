@@ -196,8 +196,8 @@ public class PhaseTwo implements Runnable {
                 // If the iteration number has not been reached yet, the new centroids need to be sent to workers
                 if (iteration <= max_iterations) {
                     // Sends the new centroids to the workers here
-                    this.control_return.send(this.uid + "COLLECTOR_CENTROID_UPDATE");
-
+                    this.control_return.send(this.uid + " COLLECTOR_CENTROID_UPDATE");
+                    this.control_return.recv();
                     byte[] msg_bytes;
                     //Convert the Centroids to a byte array to transmit
                     ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();

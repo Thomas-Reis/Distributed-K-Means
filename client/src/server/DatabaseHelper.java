@@ -183,7 +183,7 @@ public class DatabaseHelper implements Serializable {
                 statement.setInt(2, point.getCentroid_id());
                 statement.setInt(3, point.getRow_id());
                 // Execute the insert
-                statement.execute();
+                //statement.execute();
             }
             return true;
         } catch (SQLException e) {
