@@ -38,7 +38,8 @@ public class PhaseTwo implements Runnable {
         ZMQ.Context C = ZMQ.context(3);
         DatabaseHelper db_temp = new DatabaseHelper("root", "", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
-                "loc_x", "loc_y", "last_seen", "centroids", "id",
+                "loc_x", "loc_y", "last_seen",
+                "centroid", "centroids", "id",
                 "centroid_number", "iteration", "loc_x",
                 "loc_y");
         PhaseTwo init = new PhaseTwo(C,db_temp,"200", 10, 1000);
@@ -79,6 +80,8 @@ public class PhaseTwo implements Runnable {
         // Loop through all iterations
         int iteration = 1;
         while (iteration <= max_iterations) {
+            // Set the uid
+
             //this.control_return.send((this.uid + " ITERATION " + iteration).getBytes(ZMQ.CHARSET));
 
             /*
@@ -171,7 +174,7 @@ public class PhaseTwo implements Runnable {
             // Check if the number of points received is the expected number
             if (this.points_received >= this.expected_points) {
                 // Recalculate the centroids
-                PointGroup new_centroids = total_point_group.getNewCentroids();
+                PointGroup new_centroids = total_point_group.getNewCentroids(iteration);
 
                 // Write the centroids into the database
                 db.insertCentroids(new_centroids.getPoints(), iteration);
@@ -193,8 +196,8 @@ public class PhaseTwo implements Runnable {
                 // If the iteration number has not been reached yet, the new centroids need to be sent to workers
                 if (iteration <= max_iterations) {
                     // Sends the new centroids to the workers here
-                    this.control_return.send(this.uid + "COLLECTOR_CENTROID_UPDATE");
-
+                    this.control_return.send(this.uid + " COLLECTOR_CENTROID_UPDATE");
+                    this.control_return.recv();
                     byte[] msg_bytes;
                     //Convert the Centroids to a byte array to transmit
                     ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();
