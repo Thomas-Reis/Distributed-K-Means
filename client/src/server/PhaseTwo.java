@@ -106,36 +106,42 @@ public class PhaseTwo implements Runnable {
                         // Holds if the received group passes redundancy checks
                         boolean redundancy_pass = false;
                         PointGroup old_group = point_groups_received.get(received_id);
-                        // Check to see if it is in the collision map, meaning 2 were received with different values
-                        if (point_groups_received_collision.containsKey(received_id)) {
-                            PointGroup old_group_collision = point_groups_received_collision.get(received_id);
-                            // If either of the old values matches the passed value, the redundancy check passed
-                            if (old_group.equals(new_point_group) || old_group_collision.equals(new_point_group)) {
-                                redundancy_pass = true;
-                            }
-                            // Sets values to null regardless of success or failure
-                            point_groups_received.replace(received_id, null);
-                            point_groups_received_collision.replace(received_id, null);
-                        }
-                        // Check to see if the first hash map value is equal
-                        else if (old_group.equals(new_point_group)) {
+                        // Check to see if the old group is equal to the received group
+                        if (old_group.equals(new_point_group)) {
                             redundancy_pass = true;
-                            point_groups_received.replace(received_id, null);
-                            point_groups_received_collision.replace(received_id, null);
                         }
-                        // If none of the passes above succeeded, then the second hash map should be written to
                         else {
-                            point_groups_received_collision.put(received_id, new_point_group);
+                            // Check if the point is in the collision map
+                            if (point_groups_received_collision.containsKey(received_id)) {
+                                old_group = point_groups_received_collision.get(received_id);
+                                // Check to see if the old group is equal to the received group once again
+                                if (old_group.equals(new_point_group)) {
+                                    redundancy_pass = true;
+                                }
+                                else {
+                                    // None of the values were found, so remove it from the hash map and do not process
+                                    point_groups_received_collision.remove(received_id);
+                                    point_groups_received.remove(received_id);
+                                }
+                            }
+                            // If it wasn't, add it to the collision map
+                            else {
+                                point_groups_received_collision.put(received_id, new_point_group);
+                            }
                         }
-                        // If the redundancy pass was successful, then the received group can be fully processed
+                        // If the redundancy pass is true, the point must now be processed
                         if (redundancy_pass) {
-                            // Add the received group to phase 2's total
+                            // Combine the point groups together
                             total_point_group.combinePointGroup(new_point_group);
-                            // Increment the total points received by the number of points in the point group
-                            points_received += new_point_group.getPoints().size();
+                            // Update the database
+                            db.updatePointsSeen(new_point_group.getPoints(), iteration);
+                            // Increment the total number of points processed
+                            points_received += total_point_group.getPoints().size();
+                            // Clear the point list to free up memory
+                            total_point_group.setPoints(new ArrayList<>());
                         }
                     }
-                    // If it wasn't in the first hash map, it must be added to it
+                    // If it wasn't in the first hash map, it must be added to it so the redundancy can be checked.
                     else {
                         point_groups_received.put(received_id, new_point_group);
                     }
