@@ -159,7 +159,7 @@ public class PhaseTwo implements Runnable {
 
                     // TODO talk to Chris
                     //Update the Coordinator with the id score
-                    this.control_return.send(this.uid + " SCORE " + new_point_group.getProcessedBy() + " " + 1);
+                    //this.control_return.send(this.uid + " SCORE " + new_point_group.getProcessedBy() + " " + 1);
                 }
             }
 
