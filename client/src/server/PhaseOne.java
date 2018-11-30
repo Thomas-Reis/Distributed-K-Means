@@ -99,7 +99,9 @@ public class PhaseOne implements Runnable {
     private void attemptTransmitPointGroup() {
         System.out.print("Outputting Points...");
         this.transmitted = this.task_transmit_socket.send(this.next_transmission, ZMQ.DONTWAIT);
-        this.redundant_sends_left--;
+        if (this.transmitted) {
+            this.redundant_sends_left--;
+        }
         System.out.println("Complete!");
     }
 
