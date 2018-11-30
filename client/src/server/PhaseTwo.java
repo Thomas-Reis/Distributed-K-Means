@@ -2,6 +2,7 @@ package server;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
+import shared.Point;
 import shared.PointGroup;
 
 import java.io.ByteArrayInputStream;
@@ -136,7 +137,7 @@ public class PhaseTwo implements Runnable {
                             // Update the database
                             db.updatePointsSeen(new_point_group.getPoints(), iteration);
                             // Increment the total number of points processed
-                            points_received += total_point_group.getPoints().size();
+                            points_received += new_point_group.getPoints().size();
                             // Clear the point list to free up memory
                             total_point_group.setPoints(new ArrayList<>());
                         }
@@ -146,6 +147,7 @@ public class PhaseTwo implements Runnable {
                         point_groups_received.put(received_id, new_point_group);
                     }
 
+                    // TODO talk to Chris
                     //Update the Coordinator with the id score
                     this.control_return.send(this.uid + " SCORE " + new_point_group.getProcessedBy() + " " + 1);
                 }
@@ -161,6 +163,23 @@ public class PhaseTwo implements Runnable {
 
                 // Increment the iteration, as this iteration is now completed
                 iteration++;
+
+                // Reset the points that have been received
+                // TODO replace with a proper id
+                total_point_group = new PointGroup(new ArrayList<>(), "TODO replace this");
+
+                // Reset the number of points received
+                points_received = 0;
+
+                // If the iteration number has not been reached yet, the new centroids need to be sent to workers
+                if (iteration <= k) {
+                    // TODO send the new centroids to the workers here
+                }
+                /* If the iteration has been reached, the coordinator should be signalled that the results have been
+                found */
+                else {
+                    // TODO send the new
+                }
             }
         }
 
