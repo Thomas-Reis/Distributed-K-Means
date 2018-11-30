@@ -64,21 +64,25 @@ public class Client {
         try {
             ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
             recieved_centroids = (PointGroup) Byte_Translator.readObject();
-        } catch(Exception e){
+        } catch (Exception e) {
             System.err.println("Error Parsing Centroids");
         }
 
         while (true) {
-            server_msg = client_taskboard.recv();
-            System.out.print("Recieved Points from Coordinator...");
+            server_msg = client_taskboard.recv(ZMQ.DONTWAIT);
             try {
                 Input_Byte_Converter = new ByteArrayInputStream(server_msg);
                 ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
                 MyPoint_Group = (PointGroup) Byte_Translator.readObject();
+                System.out.print("Recieved Points from Coordinator...");
                 MyPoint_Group = KMeans.processPointGroup(MyPoint_Group, recieved_centroids);
                 System.out.println("Finished Processing Points");
                 //TODO Send to Phase 2
+            } catch (Exception e) {
+                //System.err.println("Error Parsing Point Given");
+            }
 
+            try {
                 //Check for messages from control
                 server_msg = client_sub.recv(ZMQ.DONTWAIT);
                 if (server_msg != null) {
@@ -86,33 +90,21 @@ public class Client {
                     String[] msg_parts = message.split(" ");
                     //checks if theres an update to the centroids on the Broadcast Frequency
                     if (msg_parts[1].equals("CENTROIDS")) {
-                        recieved_centroids = convert_to_PointGroup(server_msg);
-                    } else if (msg_parts[1].equals("DONE")){
+                        Input_Byte_Converter = new ByteArrayInputStream(server_msg);
+                        ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
+                        recieved_centroids = (PointGroup) Byte_Translator.readObject();
+                    } else if (msg_parts[1].equals("COUNT")) {
                         //TODO determine what to do when the iteration is complete
                         //the iteration is complete
                         break;
                     }
                 }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(-300);
+            } catch (Exception e){
+                System.out.println("Error Parsing Broadcast Message");
             }
         }
         client_taskboard.close();
         System.out.println("Completed Iteration");
-    }
-
-
-    public static PointGroup convert_to_PointGroup(byte[] msg) {
-        try {
-            ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(msg);
-            ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
-            return (PointGroup) Byte_Translator.readObject();
-        } catch (Exception e) {
-            System.err.print("Unable to Convert to PointGroup");
-            return null;
-        }
     }
 
     public static void connect_to_socket(String ip) {
