@@ -20,12 +20,15 @@ public class Client {
 
     private static int control_transmit_port = 10010;
     private static int control_return_port = 10011;
+    private static int collector_port = 10001;
+    private static String collector_ip = "localhost";
 
     static String SERVERIP = "127.0.0.1";
     private static int client_uid;
     private static ZMQ.Socket client_sub;
     private static ZMQ.Socket client_req;
     private static ZMQ.Socket client_taskboard;
+    private static ZMQ.Socket collector_upload;
     private static ZMQ.Context zmq_context;
 
     public static void main(String[] args) throws InterruptedException {
@@ -49,6 +52,9 @@ public class Client {
                 client_taskboard = zmq_context.socket(SocketType.PULL);
                 client_taskboard.connect("tcp://" + task_board_IP + ":" + task_board_port);
                 client_taskboard.setBacklog(3);
+
+                collector_upload = zmq_context.socket(SocketType.PUSH);
+                collector_upload.connect("tcp://" + collector_ip + ":" + collector_port);
 
                 break;
             }
@@ -78,6 +84,15 @@ public class Client {
                 MyPoint_Group = KMeans.processPointGroup(MyPoint_Group, recieved_centroids);
                 System.out.println("Finished Processing Points");
                 //TODO Send to Phase 2
+
+                ByteArrayOutputStream collector_byte_stream = new ByteArrayOutputStream();
+                ObjectOutput collector_converter = new ObjectOutputStream(collector_byte_stream);
+                collector_converter.writeObject(MyPoint_Group);
+                collector_converter.flush();
+                byte[] uploaded_points = collector_byte_stream.toByteArray();
+                //uploads the points to the collector, doesn't stop since the collector may have a queue
+                collector_upload.send(uploaded_points, ZMQ.DONTWAIT);
+
             } catch (Exception e) {
                 //System.err.println("Error Parsing Point Given");
             }
