@@ -120,12 +120,13 @@ public class DatabaseHelper implements Serializable {
      * @param num_points The number of points to grab.
      * @return An array list of points that were retrieved or null if an sql error occurred.
      */
-    public ArrayList<Point> getPoints(int num_points) {
+    public ArrayList<Point> getPoints(int num_points) throws SQLException {
         // Create an array list of points to be returned
         ArrayList<Point> points = new ArrayList<>();
+        Connection conn = null;
         try {
             // Get the connection
-            Connection conn = getConnection();
+            conn = getConnection();
             if (db_type.equals(DatabaseType.MYSQL)) {
                 // The sql to be done
                 String sql = String.format("SELECT %s, %s, %s FROM %s ORDER BY %s LIMIT ? OFFSET ?;",
@@ -153,12 +154,17 @@ public class DatabaseHelper implements Serializable {
             // Change the offset value based on the number of points that were retrieved.
             offset += points.size();
 
+
             // Return the points that were found
-            return points;
+
         } catch (SQLException e) {
             e.printStackTrace();
-            return null;
+            points = null;
+        } finally {
+            if (conn != null)
+            { conn.close(); }
         }
+        return points;
     }
 
     /** Updates the database stating when a point has been seen in the given iteration.
@@ -167,9 +173,10 @@ public class DatabaseHelper implements Serializable {
      * @param iteration_number The iteration number that the point was seen in.
      * @return Whether or not the insertions all happened successfully.
      */
-    public boolean updatePointsSeen(ArrayList<Point> points_seen, int iteration_number) {
+    public boolean updatePointsSeen(ArrayList<Point> points_seen, int iteration_number) throws SQLException {
         // The connection to the database
-        Connection conn;
+        Connection conn = null;
+        boolean success;
         try {
             conn = getConnection();
             // The sql to update the point in the database
@@ -185,11 +192,15 @@ public class DatabaseHelper implements Serializable {
                 // Execute the insert
                 //statement.execute();
             }
-            return true;
+            success = true;
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
+            success = false;
+        } finally {
+            if (conn != null)
+            { conn.close(); }
         }
+        return success;
     }
 
     /** Inserts the given centroids into the database with the given iteration number.
@@ -199,9 +210,10 @@ public class DatabaseHelper implements Serializable {
      * @param iteration The iteration of k-means that these centroids were calculated from.
      * @return Whether or not the points were successfully inserted.
      */
-    public boolean insertCentroids(ArrayList<Point> centroids, int iteration) {
+    public boolean insertCentroids(ArrayList<Point> centroids, int iteration) throws SQLException {
         // The connection to the database
-        Connection conn;
+        Connection conn = null;
+        boolean success = true;
         try {
             // Get the connection
             conn = getConnection();
@@ -226,9 +238,12 @@ public class DatabaseHelper implements Serializable {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
+            success = false;
+        } finally {
+            if (conn != null)
+            { conn.close(); }
         }
-        return true;
+        return success;
     }
 
     /** Gets an ArrayList of points to use as starting centroids by randomly selecting k points from the database.
@@ -236,9 +251,9 @@ public class DatabaseHelper implements Serializable {
      * @param k The number of centroids needed.
      * @return The ArrayList of points.
      */
-    public ArrayList<Point> getStartingCentroids(int k) {
+    public ArrayList<Point> getStartingCentroids(int k) throws SQLException {
         // The connection to the database
-        Connection conn;
+        Connection conn = null;
         // The array list to return
         ArrayList<Point> centroids = new ArrayList<>();
         try {
@@ -264,11 +279,15 @@ public class DatabaseHelper implements Serializable {
                 centroid.setCentroid_id(id++);
                 centroids.add(centroid);
             }
-            return centroids;
+            //return centroids;
         } catch (SQLException e) {
             e.printStackTrace();
-            return null;
+            centroids = null;
+        } finally {
+            if (conn != null)
+            { conn.close(); }
         }
+        return centroids;
     }
 
     /** Reset the database for when a new iteration starts.

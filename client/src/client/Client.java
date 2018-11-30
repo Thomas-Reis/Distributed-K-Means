@@ -91,7 +91,7 @@ public class Client {
                 collector_converter.flush();
                 byte[] uploaded_points = collector_byte_stream.toByteArray();
                 //uploads the points to the collector, doesn't stop since the collector may have a queue
-                collector_upload.send(uploaded_points, ZMQ.DONTWAIT);
+                collector_upload.send(uploaded_points, ZMQ.DONTWAIT); //TODO: Make sure group gets sent eventually
 
             } catch (Exception e) {
                 //System.err.println("Error Parsing Point Given");
@@ -104,7 +104,7 @@ public class Client {
                     String message = new String(server_msg, ZMQ.CHARSET);
                     String[] msg_parts = message.split(" ");
                     //checks if theres an update to the centroids on the Broadcast Frequency
-                    if (msg_parts[1].equals("CENTROIDS")) {
+                    if (msg_parts[1].equals("CENTROIDS")) { //TODO: make sure centroids are sent as expected
                         Input_Byte_Converter = new ByteArrayInputStream(server_msg);
                         ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
                         recieved_centroids = (PointGroup) Byte_Translator.readObject();

@@ -5,6 +5,7 @@ import org.zeromq.ZMQ;
 import shared.PointGroup;
 
 import java.io.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -37,7 +38,7 @@ public class PhaseTwo implements Runnable {
 
     public static void main(String[] args){
         ZMQ.Context C = ZMQ.context(3);
-        DatabaseHelper db_temp = new DatabaseHelper("root", "", "localhost", 3306,
+        DatabaseHelper db_temp = new DatabaseHelper("root", "f#T5nw3IK%RV", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
                 "loc_x", "loc_y", "last_seen",
                 "centroid", "centroids", "id",
@@ -152,7 +153,14 @@ public class PhaseTwo implements Runnable {
                             // Combine the point groups together
                             total_point_group.combinePointGroup(new_point_group);
                             // Update the database
-                            db.updatePointsSeen(new_point_group.getPoints(), iteration);
+                            while (true) { //Keep hitting it until it works
+                                try {
+                                    db.updatePointsSeen(new_point_group.getPoints(), iteration);
+                                    break;
+                                } catch (SQLException ex) {
+                                    continue;
+                                }
+                            }
                             // Increment the total number of points processed
                             points_received += new_point_group.getPoints().size();
                             // Clear the point list to free up memory
@@ -181,8 +189,14 @@ public class PhaseTwo implements Runnable {
                 PointGroup new_centroids = total_point_group.getNewCentroids(iteration);
 
                 // Write the centroids into the database
-                db.insertCentroids(new_centroids.getPoints(), iteration);
-
+                while (true) { //Keep hitting it until it works
+                    try {
+                        db.insertCentroids(new_centroids.getPoints(), iteration);
+                        break;
+                    } catch (SQLException ex) {
+                        continue;
+                    }
+                }
                 // Increment the iteration, as this iteration is now completed
                 iteration++;
 
@@ -200,6 +214,11 @@ public class PhaseTwo implements Runnable {
                 // If the iteration number has not been reached yet, the new centroids need to be sent to workers
                 if (iteration <= max_iterations) {
                     System.out.println("Preparing to send Centroid Update...");
+
+                    if (this.control_return.getSocketType() == SocketType.REP) {
+                        this.control_return.recv(ZMQ.DONTWAIT);
+                    }
+
                     // Sends the new centroids to the workers here
                     this.control_return.send(this.uid + " COLLECTOR_CENTROID_UPDATE");
                     byte[] msg_bytes;

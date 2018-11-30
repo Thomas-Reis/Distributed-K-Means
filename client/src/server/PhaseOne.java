@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.sql.SQLException;
 
 public class PhaseOne implements Runnable {
 
@@ -47,7 +48,7 @@ public class PhaseOne implements Runnable {
 
     public static void main(String[] args) {
         ZMQ.Context zmq_context = ZMQ.context(6);
-        DatabaseHelper db = new DatabaseHelper("root", "", "localhost", 3306,
+        DatabaseHelper db = new DatabaseHelper("root", "f#T5nw3IK%RV", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
                 "loc_x", "loc_y", "last_seen",
                 "centroid","centroids", "id",
@@ -87,8 +88,14 @@ public class PhaseOne implements Runnable {
     }
 
     public void GenCentroids() {
-        iteration_centroids = new PointGroup(db.getStartingCentroids(K), this.uid + " CENTROID " + iteration_num);
-
+        while (true) { //Keep hitting it until it works
+            try {
+                iteration_centroids = new PointGroup(db.getStartingCentroids(K), this.uid + " CENTROID " + iteration_num);
+                break;
+            } catch (SQLException ex) {
+                continue;
+            }
+        }
     }
 
 
@@ -104,8 +111,15 @@ public class PhaseOne implements Runnable {
 
     private void getNextGroup() throws IndexOutOfBoundsException {
         if (this.transmitted) {
-
-            PointGroup nextCluster = new PointGroup(this.db.getPoints(this.group_size), Integer.toString(clusterid++));
+            PointGroup nextCluster;
+            while (true) { //Keep hitting it until it works
+                try {
+                    nextCluster = new PointGroup(this.db.getPoints(this.group_size), Integer.toString(clusterid++));
+                    break;
+                } catch (SQLException ex) {
+                    continue;
+                }
+            }
             if (nextCluster.getPoints().size() == 0) {
                 throw new IndexOutOfBoundsException(); // Out of data, stop the loop
             }
@@ -162,11 +176,16 @@ public class PhaseOne implements Runnable {
                 //Get the next group, break if no data left
                 try {
                     this.getNextGroup();
-                } catch (IndexOutOfBoundsException ex) {
-                    if (iter_num > 1) {
+                } catch (IndexOutOfBoundsException ex)
+                {
+                    //if (iter_num > 1) {
+                    //    this.control_return.recv(ZMQ.DONTWAIT);
+                    //}
+                    //All the points have been distributed for this iteration
+                    if (this.control_return.getSocketType() == SocketType.REP) {
                         this.control_return.recv(ZMQ.DONTWAIT);
                     }
-                    //All the points have been distributed for this iteration
+
                     this.control_return.send((this.uid + " DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));
                     //listens in on the control socket until the iteration is complete and its okay to redistribute
                     while(true){

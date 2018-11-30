@@ -108,6 +108,7 @@ public class Coordinator implements Runnable {
                     //Send the count to phase 2
                     //this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
                 } else if (message_chunks[1].equals("START")) { //P1 starting
+                    this.control_return.send("OK".getBytes(ZMQ.CHARSET));
                     //TODO: What should we do when PhaseOne starts?
                     this.control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000");
                     byte[] centroid_return = this.control_return.recv();
@@ -132,6 +133,7 @@ public class Coordinator implements Runnable {
                 } else if (message_chunks[1].equals("DONE")) { //Finished
                     //TODO: Do something to clean up the thing
                 } else if (message_chunks[1].equals("COLLECTOR_CENTROID_UPDATE")){
+                    //TODO verify?
                     //client's should no longer be listening since all points are out so its safe to use the Socket
                     this.control_return.send("OK");
                     byte[] centroid_return = this.collector_receive.recv();
