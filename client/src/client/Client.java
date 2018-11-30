@@ -72,7 +72,9 @@ public class Client {
             server_msg = client_taskboard.recv();
             System.out.print("Recieved Points from Coordinator...");
             try {
-                MyPoint_Group = convert_to_PointGroup(server_msg);
+                Input_Byte_Converter = new ByteArrayInputStream(server_msg);
+                ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
+                MyPoint_Group = (PointGroup) Byte_Translator.readObject();
                 MyPoint_Group = KMeans.processPointGroup(MyPoint_Group, recieved_centroids);
                 System.out.println("Finished Processing Points");
                 //TODO Send to Phase 2
