@@ -159,7 +159,7 @@ public class PhaseOne implements Runnable {
                 //Get the next group, break if no data left
                 try {
                     this.getNextGroup();
-                } catch (NullPointerException ex) {
+                } catch (IndexOutOfBoundsException ex) {
                     break;
                 }
             }
