@@ -54,13 +54,14 @@ public class Client {
         }
 
         //Gets the Port for the Centroids on the task board's IP
-        server_msg = client_sub.recv(ZMQ.DONTWAIT);
+        server_msg = client_sub.recv();
         if (server_msg != null) {
             String message = new String(server_msg, ZMQ.CHARSET);
             String[] msg_parts = message.split(" ");
             if (msg_parts[1].equals("CENTROIDSPORT")) {
                 String centroid_port = msg_parts[2];
                 centroid_board = zmq_context.socket(SocketType.SUB);
+                centroid_board.subscribe("");
                 centroid_board.connect("tcp://" + task_board_IP + ":" + centroid_port);
                 System.out.println("Connected To Centroid Update Socket");
             }
@@ -74,9 +75,9 @@ public class Client {
                 String centroid_request = client_uid + " CENTROIDS_UPDATE";
                 System.out.println("Requesting Centroids");
                 client_req.send(centroid_request.getBytes(ZMQ.CHARSET), 0);
-                recieved_centroids = convert_to_PointGroup(centroid_board.recv());
                 //sleep to avoid spamming requests
-                Thread.sleep(100);
+                server_msg = centroid_board.recv();
+                recieved_centroids = convert_to_PointGroup(server_msg);
             } else{
                 System.out.println("Received Centroids");
                 recieved_centroids = convert_to_PointGroup(server_msg);

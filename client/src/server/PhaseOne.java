@@ -19,6 +19,7 @@ public class PhaseOne implements Runnable {
     private int clusters_sent = 0;
     private int K = 5;
     private int iteration_num = 1;
+    private int clusterid = 0;
 
     private byte[] next_transmission;
     private boolean transmitted;
@@ -53,7 +54,7 @@ public class PhaseOne implements Runnable {
                 "centroid_number", "iteration", "loc_x",
                 "loc_y");
         int ClusterSize = 20;
-        int Redundant_Calcs = 5;
+        int Redundant_Calcs = 3;
         PhaseOne init = new PhaseOne(zmq_context, db, "100",Redundant_Calcs,ClusterSize);
         init.run();
     }
@@ -129,7 +130,6 @@ public class PhaseOne implements Runnable {
                 this.next_transmission = message;
 
             }
-
         }
     }
 
@@ -138,7 +138,7 @@ public class PhaseOne implements Runnable {
         //Let the Coordinator know we've started
         this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
 
-        int clusterid = 0;
+        clusterid = 0;
         while (true) {
 
             //If we've completely sent the last PointGroup
@@ -156,7 +156,6 @@ public class PhaseOne implements Runnable {
                 attemptTransmitPointGroup();
             }
 
-
             //Check for messages from control
             byte[] control = this.control_socket.recv(ZMQ.DONTWAIT);
             if (control != null) {
@@ -172,7 +171,7 @@ public class PhaseOne implements Runnable {
                         converter.flush();
                         msg_bytes = centroid_byte_stream.toByteArray();
                     } catch (IOException ex) { msg_bytes = new byte[] {0}; }
-                    centroid_transmit.send(centroid_byte_stream.toByteArray());
+                    centroid_transmit.send(msg_bytes);
                 }
 
             }
