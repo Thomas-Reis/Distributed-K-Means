@@ -22,6 +22,7 @@ public class PhaseTwo implements Runnable {
     private ZMQ.Socket control_return;
     private ZMQ.Socket task_receive_socket;
     private ZMQ.Socket coordinator_link;
+    private ZMQ.Context context;
 
     // The hash maps that will store received point groups for redundancy checks
     private HashMap<String, PointGroup> point_groups_received = new HashMap<>();
@@ -37,7 +38,7 @@ public class PhaseTwo implements Runnable {
     //Control_return = 10011
 
     public static void main(String[] args){
-        ZMQ.Context C = ZMQ.context(3);
+        ZMQ.Context C = ZMQ.context(16);
         DatabaseHelper db_temp = new DatabaseHelper("root", "f#T5nw3IK%RV", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
                 "loc_x", "loc_y", "last_seen",
@@ -54,6 +55,7 @@ public class PhaseTwo implements Runnable {
         this.max_iterations = iterations;
         this.expected_points = expected_points;
 
+        this.context = zmq_context;
 
         //Setup the transmission socket
         this.task_receive_socket = zmq_context.socket(SocketType.PULL);
@@ -215,12 +217,14 @@ public class PhaseTwo implements Runnable {
                 if (iteration <= max_iterations) {
                     System.out.println("Preparing to send Centroid Update...");
 
-                    if (this.control_return.getSocketType() == SocketType.REP) {
-                        this.control_return.recv(ZMQ.DONTWAIT);
+                    while (this.control_return.getSocketType() != SocketType.REQ) {
+                        System.out.println("Converting socket...");
+                        this.control_return.recv();//ZMQ.DONTWAIT);
                     }
 
                     // Sends the new centroids to the workers here
                     this.control_return.send(this.uid + " COLLECTOR_CENTROID_UPDATE");
+                    this.control_return.recv();//ZMQ.DONTWAIT);
                     byte[] msg_bytes;
                     //Convert the Centroids to a byte array to transmit
                     ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();

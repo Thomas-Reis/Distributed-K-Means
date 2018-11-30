@@ -103,6 +103,7 @@ public class Coordinator implements Runnable {
             if (Integer.parseInt(message_chunks[0]) == this.phase_one_id && this.phase_one_id != -1) {
                 if (message_chunks[1].equals("DONE")) { //P1 finished
                     //tell the clients to stop calculations
+                    this.control_return.send("OK");
                     this.control_transmit.send("BROADCAST DONE");
                     this.control_transmit.send("OK");
                     //Send the count to phase 2
@@ -131,6 +132,7 @@ public class Coordinator implements Runnable {
                 } else if (message_chunks[1].equals("SCORE")) { //Sent score for client
                     this.incrementClientScore(Integer.parseInt(message_chunks[2]), Integer.parseInt(message_chunks[3]));
                 } else if (message_chunks[1].equals("DONE")) { //Finished
+                    this.control_return.send("OK");
                     //TODO: Do something to clean up the thing
                 } else if (message_chunks[1].equals("COLLECTOR_CENTROID_UPDATE")){
                     //TODO verify?

@@ -30,6 +30,7 @@ public class PhaseOne implements Runnable {
     private ZMQ.Socket task_transmit_socket;
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
+    private ZMQ.Context context;
 
     //How many points to include in a group
     private int group_size;
@@ -47,7 +48,7 @@ public class PhaseOne implements Runnable {
     //Control_return = 10011
 
     public static void main(String[] args) {
-        ZMQ.Context zmq_context = ZMQ.context(6);
+        ZMQ.Context zmq_context = ZMQ.context(16);
         DatabaseHelper db = new DatabaseHelper("root", "f#T5nw3IK%RV", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
                 "loc_x", "loc_y", "last_seen",
@@ -63,6 +64,8 @@ public class PhaseOne implements Runnable {
 
     PhaseOne(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int redundant_calculations, int group_size) {
         this.db = db;
+
+        this.context = zmq_context;
 
         this.group_size = group_size;
         this.redundant_calculations = redundant_calculations;
@@ -182,11 +185,14 @@ public class PhaseOne implements Runnable {
                     //    this.control_return.recv(ZMQ.DONTWAIT);
                     //}
                     //All the points have been distributed for this iteration
-                    if (this.control_return.getSocketType() == SocketType.REP) {
-                        this.control_return.recv(ZMQ.DONTWAIT);
+                    while (this.control_return.getSocketType() != SocketType.REQ) {
+                        System.out.println("Converting socket...");
+                        this.control_return.recv();//ZMQ.DONTWAIT);
                     }
-
+                    System.out.println("All points distributed, notifying the coordinator");
                     this.control_return.send((this.uid + " DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));
+                    this.control_return.recv();//ZMQ.DONTWAIT);
+                    System.out.println("Coordinator notified");
                     //listens in on the control socket until the iteration is complete and its okay to redistribute
                     while(true){
                         byte[] broadcast_msg = control_socket.recv();
