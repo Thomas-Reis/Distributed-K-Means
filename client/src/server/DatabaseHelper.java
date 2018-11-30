@@ -266,4 +266,11 @@ public class DatabaseHelper implements Serializable {
             return null;
         }
     }
+
+    /** Reset the database for when a new iteration starts.
+     *
+     */
+    public void reset() {
+        this.offset = 0;
+    }
 }

@@ -12,7 +12,7 @@ public class PhaseTwo implements Runnable {
     private DatabaseHelper db;
 
     private String uid;
-    private int expected_points = Integer.MAX_VALUE;
+    private int expected_points;
     private int points_received = 0;
 
     private int max_iterations;
@@ -41,14 +41,15 @@ public class PhaseTwo implements Runnable {
                 "loc_x", "loc_y", "last_seen", "centroids", "id",
                 "centroid_number", "iteration", "loc_x",
                 "loc_y");
-        PhaseTwo init = new PhaseTwo(C,db_temp,"200", 10);
+        PhaseTwo init = new PhaseTwo(C,db_temp,"200", 10, 1000);
         init.run();
     }
 
-    PhaseTwo(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int iterations) {
+    PhaseTwo(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int iterations, int expected_points) {
         this.uid = uid;
         this.db = db;
         this.max_iterations = iterations;
+        this.expected_points = expected_points;
 
 
         //Setup the transmission socket
