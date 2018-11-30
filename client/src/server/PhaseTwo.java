@@ -150,6 +150,11 @@ public class PhaseTwo implements Runnable {
                             points_received += new_point_group.getPoints().size();
                             // Clear the point list to free up memory
                             total_point_group.setPoints(new ArrayList<>());
+                            // Remove the point groups from the hash map
+                            point_groups_received.remove(received_id);
+                            if (point_groups_received_collision.containsKey(received_id)) {
+                                point_groups_received_collision.remove(received_id);
+                            }
                         }
                     }
                     // If it wasn't in the first hash map, it must be added to it so the redundancy can be checked.
@@ -180,6 +185,10 @@ public class PhaseTwo implements Runnable {
 
                 // Reset the number of points received
                 points_received = 0;
+
+                // Reset the hash maps
+                point_groups_received = new HashMap<>();
+                point_groups_received_collision = new HashMap<>();
 
                 // If the iteration number has not been reached yet, the new centroids need to be sent to workers
                 if (iteration <= max_iterations) {
