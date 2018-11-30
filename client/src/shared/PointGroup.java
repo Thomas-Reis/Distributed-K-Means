@@ -24,6 +24,10 @@ public class PointGroup implements Serializable {
         return this.points;
     }
 
+    public void setPoints(ArrayList<Point> points) {
+        this.points = points;
+    }
+
     public String getUid() {
         return this.uid;
     }
@@ -147,6 +151,22 @@ public class PointGroup implements Serializable {
     }
 
     public boolean equals(PointGroup pg) {
-        return this.centroid_sums.equals(pg);
+        // Loop through the hash map
+        for (Map.Entry<Integer, double[]> centroid: centroid_sums.entrySet()) {
+            if (pg.getCentroidSums().containsKey(centroid.getKey())) {
+                // Get the current map entry
+                double[] value1 = centroid.getValue();
+                double[] value2 = pg.getCentroidSums().get(centroid.getKey());
+
+                // If the values aren't equal, objects are not equal and should be returned as false
+                for (int i = 0; i < value1.length && i < value2.length; i++) {
+                    if (!(value1[i] == value2[i])) {
+                        return false;
+                    }
+                }
+            }
+        }
+        // If the entire hash map is walked through, it returns true
+        return true;
     }
 }

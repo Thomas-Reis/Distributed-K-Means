@@ -38,9 +38,9 @@ public class PhaseOne implements Runnable {
         ZMQ.Context zmq_context = ZMQ.context(2);
         DatabaseHelper db = new DatabaseHelper("root", "", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
-                "loc_x", "loc_y", "centroids", "id",
-                "centroid_number", "iteration", "loc_x",
-                "loc_y");
+                "loc_x", "loc_y", "last_seen",
+                "centroids", "id","centroid_number",
+                "iteration", "loc_x","loc_y");
         int ClusterSize = 20;
         int Redundant_Calcs = 5;
         PhaseOne init = new PhaseOne(zmq_context, db, "100",Redundant_Calcs,ClusterSize);
