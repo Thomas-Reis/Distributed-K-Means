@@ -45,7 +45,7 @@ public class PhaseTwo implements Runnable {
 
         //Setup the transmission socket
         this.task_receive_socket = zmq_context.socket(SocketType.PULL);
-        this.task_receive_socket.setBacklog(3); //Allow only 3 messages on local queue
+        //this.task_receive_socket.setBacklog(3); //Allow only 3 messages on local queue
         this.task_receive_socket.bind("tcp://*:10001");
 
         //Setup the control downlink

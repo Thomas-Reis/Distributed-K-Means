@@ -64,8 +64,6 @@ public class Coordinator implements Runnable {
 
     @Override
     public void run() {
-        //TODO: Setup PhaseOne & PhaseTwo Systems
-
         while (true) {
 
             byte[] message_raw = this.control_return.recv();
