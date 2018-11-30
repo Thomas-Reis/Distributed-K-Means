@@ -24,6 +24,7 @@ public class PhaseOne implements Runnable {
     private byte[] next_transmission;
     private boolean transmitted;
     private int redundant_sends_left;
+    private int iter_num = 1;
 
     private ZMQ.Socket task_transmit_socket;
     private ZMQ.Socket control_socket;
@@ -162,6 +163,9 @@ public class PhaseOne implements Runnable {
                 try {
                     this.getNextGroup();
                 } catch (IndexOutOfBoundsException ex) {
+                    if (iter_num > 1) {
+                        this.control_return.recv(ZMQ.DONTWAIT);
+                    }
                     //All the points have been distributed for this iteration
                     this.control_return.send((this.uid + " DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));
                     //listens in on the control socket until the iteration is complete and its okay to redistribute
@@ -177,6 +181,7 @@ public class PhaseOne implements Runnable {
                     clusterid = 0;
                     this.transmitted = true;
                     this.redundant_sends_left = 0;
+                    iter_num++;
                     this.db.reset();
                 }
             }

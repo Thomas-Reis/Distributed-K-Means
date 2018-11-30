@@ -28,6 +28,7 @@ public class Coordinator implements Runnable {
 
     private ZMQ.Socket control_transmit;
     private ZMQ.Socket control_return;
+    private ZMQ.Socket collector_receive;
     private ZMQ.Context zmq_context;
 
     public static void main(String[] args){
@@ -45,6 +46,9 @@ public class Coordinator implements Runnable {
 
         this.control_return = zmq_context.socket(SocketType.REP);
         this.control_return.bind("tcp://*:" + control_return_port);
+
+        this.collector_receive = zmq_context.socket(SocketType.REP);
+        this.collector_receive.bind("tcp://*:10101");
 
     }
 
@@ -100,12 +104,12 @@ public class Coordinator implements Runnable {
                 if (message_chunks[1].equals("DONE")) { //P1 finished
                     //tell the clients to stop calculations
                     this.control_transmit.send("BROADCAST DONE");
+                    this.control_transmit.send("OK");
                     //Send the count to phase 2
-                    this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
+                    //this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
                 } else if (message_chunks[1].equals("START")) { //P1 starting
                     //TODO: What should we do when PhaseOne starts?
-                    this.control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000 ");
-                    this.control_return.send("OK");
+                    this.control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000");
                     byte[] centroid_return = this.control_return.recv();
                     ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(centroid_return);
                     try {
@@ -130,18 +134,19 @@ public class Coordinator implements Runnable {
                 } else if (message_chunks[1].equals("COLLECTOR_CENTROID_UPDATE")){
                     //client's should no longer be listening since all points are out so its safe to use the Socket
                     this.control_return.send("OK");
-                    byte[] centroid_return = this.control_return.recv();
+                    byte[] centroid_return = this.collector_receive.recv();
                     ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(centroid_return);
                     try {
                         ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
                         Recv_Centroids = (PointGroup) Byte_Translator.readObject();
-                        this.control_return.send("SUCCESS");
+                        this.collector_receive.send("SUCCESS");
                     } catch(Exception e) {
                         System.err.println("Error Parsing Centroids");
                     }
 
                     //Broadcast that a Centroid Update is Ready and phase 2 will begin soon
                     this.control_transmit.send("BROADCAST CENTROID_UPDATE");
+                    System.out.println("Break Here");
                 }
             }
 

@@ -20,6 +20,7 @@ public class PhaseTwo implements Runnable {
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
     private ZMQ.Socket task_receive_socket;
+    private ZMQ.Socket coordinator_link;
 
     // The hash maps that will store received point groups for redundancy checks
     private HashMap<String, PointGroup> point_groups_received = new HashMap<>();
@@ -67,6 +68,9 @@ public class PhaseTwo implements Runnable {
         //Setup the control uplink
         this.control_return = zmq_context.socket(SocketType.REQ);
         this.control_return.connect("tcp://localhost:10011");
+
+        this.coordinator_link = zmq_context.socket(SocketType.DEALER.REQ);
+        this.coordinator_link.connect("tcp://localhost:10101");
 
     }
 
@@ -195,9 +199,9 @@ public class PhaseTwo implements Runnable {
 
                 // If the iteration number has not been reached yet, the new centroids need to be sent to workers
                 if (iteration <= max_iterations) {
+                    System.out.println("Preparing to send Centroid Update...");
                     // Sends the new centroids to the workers here
                     this.control_return.send(this.uid + " COLLECTOR_CENTROID_UPDATE");
-                    this.control_return.recv();
                     byte[] msg_bytes;
                     //Convert the Centroids to a byte array to transmit
                     ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();
@@ -210,8 +214,9 @@ public class PhaseTwo implements Runnable {
                     }
                     if (msg_bytes.length != 1) {
                         System.out.println("Sending Centroids");
-                        this.control_return.send(msg_bytes, ZMQ.DONTWAIT);
-                        this.control_return.recv();
+                        this.coordinator_link.send(msg_bytes, ZMQ.DONTWAIT);
+                        this.coordinator_link.recv();
+                        System.out.println("Break");
                     }
                 }
                 /* If the iteration has been reached, the coordinator should be signalled that the results have been
