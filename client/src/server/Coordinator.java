@@ -2,7 +2,9 @@ package server;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
+import shared.PointGroup;
 
+import java.io.*;
 import java.util.HashMap;
 
 public class Coordinator implements Runnable {
@@ -22,6 +24,7 @@ public class Coordinator implements Runnable {
     private int newest_id = 0;
     private int phase_one_id = 100;
     private int phase_two_id = -1;
+    private PointGroup Recv_Centroids;
 
     private ZMQ.Socket control_transmit;
     private ZMQ.Socket control_return;
@@ -48,6 +51,17 @@ public class Coordinator implements Runnable {
         }
     }
 
+    public static PointGroup convert_to_PointGroup(byte[] msg) {
+        try {
+            ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(msg);
+            ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
+            return (PointGroup) Byte_Translator.readObject();
+        } catch (Exception e) {
+            System.err.print("Unable to Convert to PointGroup");
+            return null;
+        }
+    }
+
     @Override
     public void run() {
         //TODO: Setup PhaseOne & PhaseTwo Systems
@@ -59,8 +73,21 @@ public class Coordinator implements Runnable {
             String[] message_chunks = message.split(" ");
 
             if (message_chunks[1].equals("CENTROIDS_UPDATE")){
-                System.out.println("Requesting a Centroid Update");
-                control_transmit.send("BROADCAST REQCENTROIDS");
+                System.out.println("Client requesting a Centroid Update");
+
+                byte[] centroid_bytes;
+
+                //Convert the cluster to a byte array
+                ByteArrayOutputStream byte_stream = new ByteArrayOutputStream();
+                try (ObjectOutput converter = new ObjectOutputStream(byte_stream)) {
+                    converter.writeObject(Recv_Centroids);
+                    converter.flush();
+                    centroid_bytes = byte_stream.toByteArray();
+                } catch (IOException ex) {
+                    centroid_bytes = new byte[]{0};
+                }
+
+                this.control_return.send(centroid_bytes);
             }
 
             //New user joining the network, send them an id
@@ -72,14 +99,22 @@ public class Coordinator implements Runnable {
 
             //Message from PhaseOne
             if (Integer.parseInt(message_chunks[0]) == this.phase_one_id && this.phase_one_id != -1) {
-
                 if (message_chunks[1].equals("DONE")) { //P1 finished
                     //Send the count to phase 2
                     this.control_transmit.send(this.phase_two_id + " COUNT " + message_chunks[2]);
                 } else if (message_chunks[1].equals("START")) { //P1 starting
                     //TODO: What should we do when PhaseOne starts?
-                    control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000 ");
-                    control_transmit.send("BROADCAST CENTROIDSPORT 10100");
+                    this.control_transmit.send("BROADCAST PHASEONEREADY " + PHASEONEIP +" 10000 ");
+                    this.control_return.send("OK");
+                    byte[] centroid_return = this.control_return.recv();
+                    ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(centroid_return);
+                    try {
+                        ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
+                        Recv_Centroids = (PointGroup) Byte_Translator.readObject();
+                        this.control_return.send("SUCCESS");
+                    } catch(Exception e){
+                        System.err.println("Error Parsing Centroids");
+                    }
                 }
             }
 

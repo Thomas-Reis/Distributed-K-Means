@@ -29,11 +29,13 @@ public class Client {
     private static ZMQ.Socket client_taskboard;
     private static ZMQ.Socket centroid_board;
     private static ZMQ.Context zmq_context;
+    private static ZMQ.Context zmq_centroid_context;
 
     public static void main(String[] args) throws InterruptedException {
         PointGroup recieved_centroids = null;
         PointGroup MyPoint_Group;
-        zmq_context = ZMQ.context(3);
+        zmq_context = ZMQ.context(4);
+        zmq_centroid_context = ZMQ.context(2);
         connect_to_socket(SERVERIP);
         String task_board_IP;
         byte[] server_msg;
@@ -44,52 +46,42 @@ public class Client {
             String[] reply_msg = uid_rep_string.split(" ");
 
             if (reply_msg[1].equals("PHASEONEREADY")) {
+                //delay self to allow Coordinator to setup
+                Thread.sleep(1000);
                 task_board_IP = reply_msg[2];
                 String task_board_port = reply_msg[3];
                 client_taskboard = zmq_context.socket(SocketType.PULL);
                 client_taskboard.connect("tcp://" + task_board_IP + ":" + task_board_port);
                 client_taskboard.setBacklog(3);
+
+                centroid_board = zmq_centroid_context.socket(SocketType.PULL);
+                centroid_board.connect("tcp://" + task_board_IP + ":5555");
+
                 break;
             }
         }
+        server_msg = null;
+        System.out.println("Requesting Centroids");
 
-        //Gets the Port for the Centroids on the task board's IP
-        server_msg = client_sub.recv();
-        if (server_msg != null) {
-            String message = new String(server_msg, ZMQ.CHARSET);
-            String[] msg_parts = message.split(" ");
-            if (msg_parts[1].equals("CENTROIDSPORT")) {
-                String centroid_port = msg_parts[2];
-                centroid_board = zmq_context.socket(SocketType.SUB);
-                centroid_board.subscribe("");
-                centroid_board.connect("tcp://" + task_board_IP + ":" + centroid_port);
-                System.out.println("Connected To Centroid Update Socket");
-            }
-        }
-
-        //Loops requesting for centroids until they are posted to the centroids board broadcast
-        while (recieved_centroids == null) {
-            server_msg = centroid_board.recv(ZMQ.DONTWAIT);
-            if (server_msg == null) {
-                //Request for a centroid update broadcast
-                String centroid_request = client_uid + " CENTROIDS_UPDATE";
-                System.out.println("Requesting Centroids");
-                client_req.send(centroid_request.getBytes(ZMQ.CHARSET), 0);
-                //sleep to avoid spamming requests
-                server_msg = centroid_board.recv();
-                recieved_centroids = convert_to_PointGroup(server_msg);
-            } else{
-                System.out.println("Received Centroids");
-                recieved_centroids = convert_to_PointGroup(server_msg);
-            }
+        String centroid_request = client_uid + " CENTROIDS_UPDATE";
+        client_req.send(centroid_request.getBytes(ZMQ.CHARSET), 0);
+        byte[] centroid_raw_bytes = client_req.recv();
+        System.out.println("Received Centroids!");
+        ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(centroid_raw_bytes);
+        try {
+            ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
+            recieved_centroids = (PointGroup) Byte_Translator.readObject();
+        } catch(Exception e){
+            System.err.println("Error Parsing Centroids");
         }
 
         while (true) {
             server_msg = client_taskboard.recv();
-            System.out.println("Recieved Points from Coordinator");
+            System.out.print("Recieved Points from Coordinator...");
             try {
                 MyPoint_Group = convert_to_PointGroup(server_msg);
                 MyPoint_Group = KMeans.processPointGroup(MyPoint_Group, recieved_centroids);
+                System.out.println("Finished Processing Points");
                 //TODO Send to Phase 2
 
                 //Check for messages from control
@@ -110,10 +102,9 @@ public class Client {
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(-300);
-            } finally {
-                client_taskboard.close();
             }
         }
+        client_taskboard.close();
         System.out.println("Completed Iteration");
     }
 
@@ -125,8 +116,6 @@ public class Client {
             return (PointGroup) Byte_Translator.readObject();
         } catch (Exception e) {
             System.err.print("Unable to Convert to PointGroup");
-            return null;
-        } finally {
             return null;
         }
     }

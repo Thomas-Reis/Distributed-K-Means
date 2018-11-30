@@ -44,18 +44,18 @@ public class PhaseOne implements Runnable {
     //Task_return = 10001
     //Control_publish = 10010
     //Control_return = 10011
-    //Centroid_transmit = 10100
+    //Centroid_transmit = 5555
 
-    public static void main(String[] args){
-        ZMQ.Context zmq_context = ZMQ.context(2);
+    public static void main(String[] args) {
+        ZMQ.Context zmq_context = ZMQ.context(6);
         DatabaseHelper db = new DatabaseHelper("root", "", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
-                "loc_x", "loc_y", "last_seen" , "centroids", "id",
+                "loc_x", "loc_y", "last_seen", "centroids", "id",
                 "centroid_number", "iteration", "loc_x",
                 "loc_y");
         int ClusterSize = 20;
         int Redundant_Calcs = 3;
-        PhaseOne init = new PhaseOne(zmq_context, db, "100",Redundant_Calcs,ClusterSize);
+        PhaseOne init = new PhaseOne(zmq_context, db, "100", Redundant_Calcs, ClusterSize);
         init.run();
     }
 
@@ -84,13 +84,13 @@ public class PhaseOne implements Runnable {
         this.control_return.connect("tcp://localhost:10011");
 
         //Setup the Centroid transmission uplink
-        this.centroid_transmit = zmq_context.socket(SocketType.PUB);
-        this.centroid_transmit.connect("tcp://localhost:10100");
+        this.centroid_transmit = zmq_context.socket(SocketType.PUSH);
+        this.centroid_transmit.connect("tcp://localhost:5555");
 
         GenCentroids();
     }
 
-    public void GenCentroids(){
+    public void GenCentroids() {
         iteration_centroids = new PointGroup(db.getStartingCentroids(K), this.uid + " CENTROID " + iteration_num);
 
     }
@@ -110,7 +110,7 @@ public class PhaseOne implements Runnable {
 
             PointGroup nextCluster = new PointGroup(this.db.getPoints(this.group_size), Integer.toString(clusterid++));
             if (nextCluster.getPoints().size() == 0) {
-               throw new IndexOutOfBoundsException(); // Out of data, stop the loop
+                throw new IndexOutOfBoundsException(); // Out of data, stop the loop
             }
             byte[] message;
 
@@ -138,7 +138,23 @@ public class PhaseOne implements Runnable {
     @Override
     public void run() {
         //Let the Coordinator know we've started
-        this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
+        this.control_return.send((this.uid + " START").getBytes(ZMQ.CHARSET));
+        this.control_return.recv();
+        byte[] msg_bytes;
+        //Convert the Centroids to a byte array to transmit
+        ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();
+        try (ObjectOutput centroid_converter = new ObjectOutputStream(centroid_byte_stream)) {
+            centroid_converter.writeObject(iteration_centroids);
+            centroid_converter.flush();
+            msg_bytes = centroid_byte_stream.toByteArray();
+        } catch (IOException ex) {
+            msg_bytes = new byte[]{0};
+        }
+        if (msg_bytes.length != 1) {
+            System.out.println("Sending Centroids");
+            this.control_return.send(msg_bytes, ZMQ.DONTWAIT);
+            this.control_return.recv();
+        }
 
         clusterid = 0;
         while (true) {
@@ -158,25 +174,15 @@ public class PhaseOne implements Runnable {
                 attemptTransmitPointGroup();
             }
 
+            /*
             //Check for messages from control
             byte[] control = this.control_socket.recv(ZMQ.DONTWAIT);
             if (control != null) {
-                String coordinator_message =  new String(control, ZMQ.CHARSET);
+                String coordinator_message = new String(control, ZMQ.CHARSET);
                 String[] msg_parts = coordinator_message.split(" ");
 
-                if (msg_parts[1].equals("REQCENTROIDS")) {
-                    byte[] msg_bytes;
-                    //Convert the Centroids to a byte array to transmit
-                    ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();
-                    try (ObjectOutput converter = new ObjectOutputStream(centroid_byte_stream)) {
-                        converter.writeObject(iteration_centroids);
-                        converter.flush();
-                        msg_bytes = centroid_byte_stream.toByteArray();
-                    } catch (IOException ex) { msg_bytes = new byte[] {0}; }
-                    centroid_transmit.send(msg_bytes);
-                }
 
-            }
+            }*/
 
         }
 
@@ -184,6 +190,7 @@ public class PhaseOne implements Runnable {
         //Clean up the sockets
         this.task_transmit_socket.close();
         this.control_socket.close();
+        this.centroid_transmit.close();
 
         //Let the Coordinator know we've finished
         this.control_return.send((this.uid + " DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));
@@ -192,6 +199,7 @@ public class PhaseOne implements Runnable {
         this.control_return.close();
         return;
     }
-
 }
+
+
 
