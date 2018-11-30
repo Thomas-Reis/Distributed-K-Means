@@ -28,7 +28,6 @@ public class PhaseOne implements Runnable {
     private ZMQ.Socket task_transmit_socket;
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
-    private ZMQ.Socket centroid_transmit;
 
     //How many points to include in a group
     private int group_size;
@@ -44,7 +43,6 @@ public class PhaseOne implements Runnable {
     //Task_return = 10001
     //Control_publish = 10010
     //Control_return = 10011
-    //Centroid_transmit = 5555
 
     public static void main(String[] args) {
         ZMQ.Context zmq_context = ZMQ.context(6);
@@ -82,10 +80,6 @@ public class PhaseOne implements Runnable {
         //Setup the control uplink
         this.control_return = zmq_context.socket(SocketType.REQ);
         this.control_return.connect("tcp://localhost:10011");
-
-        //Setup the Centroid transmission uplink
-        this.centroid_transmit = zmq_context.socket(SocketType.PUSH);
-        this.centroid_transmit.connect("tcp://localhost:5555");
 
         GenCentroids();
     }
@@ -155,6 +149,7 @@ public class PhaseOne implements Runnable {
             this.control_return.send(msg_bytes, ZMQ.DONTWAIT);
             this.control_return.recv();
         }
+        this.transmitted = true;
 
         clusterid = 0;
         while (true) {
@@ -190,7 +185,6 @@ public class PhaseOne implements Runnable {
         //Clean up the sockets
         this.task_transmit_socket.close();
         this.control_socket.close();
-        this.centroid_transmit.close();
 
         //Let the Coordinator know we've finished
         this.control_return.send((this.uid + " DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));

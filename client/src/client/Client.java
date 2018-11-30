@@ -23,19 +23,15 @@ public class Client {
 
     static String SERVERIP = "127.0.0.1";
     private static int client_uid;
-    static int PORT = 5555;
     private static ZMQ.Socket client_sub;
     private static ZMQ.Socket client_req;
     private static ZMQ.Socket client_taskboard;
-    private static ZMQ.Socket centroid_board;
     private static ZMQ.Context zmq_context;
-    private static ZMQ.Context zmq_centroid_context;
 
     public static void main(String[] args) throws InterruptedException {
         PointGroup recieved_centroids = null;
         PointGroup MyPoint_Group;
         zmq_context = ZMQ.context(4);
-        zmq_centroid_context = ZMQ.context(2);
         connect_to_socket(SERVERIP);
         String task_board_IP;
         byte[] server_msg;
@@ -53,9 +49,6 @@ public class Client {
                 client_taskboard = zmq_context.socket(SocketType.PULL);
                 client_taskboard.connect("tcp://" + task_board_IP + ":" + task_board_port);
                 client_taskboard.setBacklog(3);
-
-                centroid_board = zmq_centroid_context.socket(SocketType.PULL);
-                centroid_board.connect("tcp://" + task_board_IP + ":5555");
 
                 break;
             }
