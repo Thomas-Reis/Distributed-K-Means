@@ -185,7 +185,6 @@ public class DatabaseHelper implements Serializable {
                 // Execute the insert
                 statement.execute();
             }
-            conn.commit();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -224,7 +223,6 @@ public class DatabaseHelper implements Serializable {
                     // Insert the point
                     statement.execute();
                 }
-                conn.commit();
             }
         } catch (SQLException e) {
             e.printStackTrace();

@@ -80,6 +80,8 @@ public class PhaseTwo implements Runnable {
         // Loop through all iterations
         int iteration = 1;
         while (iteration <= max_iterations) {
+            // Set the uid
+
             //this.control_return.send((this.uid + " ITERATION " + iteration).getBytes(ZMQ.CHARSET));
 
             /*
@@ -172,7 +174,7 @@ public class PhaseTwo implements Runnable {
             // Check if the number of points received is the expected number
             if (this.points_received >= this.expected_points) {
                 // Recalculate the centroids
-                PointGroup new_centroids = total_point_group.getNewCentroids();
+                PointGroup new_centroids = total_point_group.getNewCentroids(iteration);
 
                 // Write the centroids into the database
                 db.insertCentroids(new_centroids.getPoints(), iteration);

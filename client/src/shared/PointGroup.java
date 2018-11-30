@@ -125,7 +125,7 @@ public class PointGroup implements Serializable {
      *
      * @return The new point group of centroids.
      */
-    public PointGroup getNewCentroids() {
+    public PointGroup getNewCentroids(int iteration) {
         // The new array list that will hold the centroids
         ArrayList<Point> calculated_centroids = new ArrayList<>();
         for (Map.Entry<Integer, double[]> current_centroid_sum: centroid_sums.entrySet()) {
@@ -141,11 +141,7 @@ public class PointGroup implements Serializable {
             calculated_centroids.add(current_centroid);
         }
 
-        // Create the new uid for the centroid group
-        String[] id_breakdown = uid.split(" ");
-        // Increment the iteration number
-        id_breakdown[2] = Integer.toString(Integer.parseInt(id_breakdown[2]) + 1);
-        String new_uid = id_breakdown[0] + " CENTROID " + id_breakdown[2] ;
+        String new_uid = "CENTROID " + iteration ;
         // Create and return the point group
         return new PointGroup(calculated_centroids, new_uid);
     }
