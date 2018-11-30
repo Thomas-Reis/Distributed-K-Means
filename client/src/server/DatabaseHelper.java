@@ -32,6 +32,7 @@ public class DatabaseHelper implements Serializable {
     private String table_points_x;
     private String table_points_y;
     private String table_points_last_seen;
+    private String table_points_owner;
     // The view/table information for the centroids
     private String table_centroids_name;
     private String table_centroids_id;
@@ -53,6 +54,7 @@ public class DatabaseHelper implements Serializable {
      * @param table_points_x The x location column name of the points table/view.
      * @param tables_points_y The y location column name of the points table/view.
      * @param table_points_last_seen The column that holds the last iteration the point was seen.
+     * @param table_points_owner The column that holds the centroid owner.
      * @param table_centroids_name The table name for the centroid table.
      * @param table_centroids_id The id column name of the centroid table.
      * @param table_centroids_number The column name for the centroid number in the centroid table.
@@ -62,9 +64,9 @@ public class DatabaseHelper implements Serializable {
      */
     public DatabaseHelper(String username, String password, String server, int port_number, String db_name,
                           DatabaseType db_type, String table_points_name, String table_points_id, String table_points_x,
-                          String tables_points_y, String table_points_last_seen, String table_centroids_name,
-                          String table_centroids_id, String table_centroids_number, String table_centroids_iteration,
-                          String table_centroids_x, String table_centroids_y) {
+                          String tables_points_y, String table_points_last_seen, String table_points_owner,
+                          String table_centroids_name, String table_centroids_id, String table_centroids_number,
+                          String table_centroids_iteration, String table_centroids_x, String table_centroids_y) {
         this.offset = 0;
         this.username = username;
         this.password = password;
@@ -77,6 +79,7 @@ public class DatabaseHelper implements Serializable {
         this.table_points_x = table_points_x;
         this.table_points_y = tables_points_y;
         this.table_points_last_seen = table_points_last_seen;
+        this.table_points_owner = table_points_owner;
         this.table_centroids_name = table_centroids_name;
         this.table_centroids_id = table_centroids_id;
         this.table_centroids_number = table_centroids_number;
@@ -170,14 +173,15 @@ public class DatabaseHelper implements Serializable {
         try {
             conn = getConnection();
             // The sql to update the point in the database
-            String sql = String.format("UPDATE %s SET %s=? WHERE %s=?",
-                    table_points_name, table_points_last_seen, table_points_id);
+            String sql = String.format("UPDATE %s SET %s=?, %s=? WHERE %s=?",
+                    table_points_name, table_points_last_seen, table_points_owner, table_points_id);
             // Loop through all given points
             for (Point point : points_seen) {
                 // Prepare the statement
                 PreparedStatement statement = conn.prepareStatement(sql);
                 statement.setInt(1, iteration_number);
-                statement.setInt(2, point.getRow_id());
+                statement.setInt(2, point.getCentroid_id());
+                statement.setInt(3, point.getRow_id());
                 // Execute the insert
                 statement.execute();
             }

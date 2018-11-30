@@ -38,7 +38,8 @@ public class PhaseTwo implements Runnable {
         ZMQ.Context C = ZMQ.context(3);
         DatabaseHelper db_temp = new DatabaseHelper("root", "", "localhost", 3306,
                 "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
-                "loc_x", "loc_y", "last_seen", "centroids", "id",
+                "loc_x", "loc_y", "last_seen",
+                "centroid", "centroids", "id",
                 "centroid_number", "iteration", "loc_x",
                 "loc_y");
         PhaseTwo init = new PhaseTwo(C,db_temp,"200", 10, 1000);
