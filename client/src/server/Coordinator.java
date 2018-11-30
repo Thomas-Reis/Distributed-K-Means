@@ -23,7 +23,7 @@ public class Coordinator implements Runnable {
 
     private int newest_id = 0;
     private int phase_one_id = 100;
-    private int phase_two_id = -1;
+    private int phase_two_id = 200;
     private PointGroup Recv_Centroids;
 
     private ZMQ.Socket control_transmit;
@@ -126,6 +126,21 @@ public class Coordinator implements Runnable {
                     this.incrementClientScore(Integer.parseInt(message_chunks[2]), Integer.parseInt(message_chunks[3]));
                 } else if (message_chunks[1].equals("DONE")) { //Finished
                     //TODO: Do something to clean up the thing
+                } else if (message_chunks[1].equals("COLLECTOR_CENTROID_UPDATE")){
+                    //client's should no longer be listening since all points are out so its safe to use the Socket
+                    this.control_return.send("OK");
+                    byte[] centroid_return = this.control_return.recv();
+                    ByteArrayInputStream Input_Byte_Converter = new ByteArrayInputStream(centroid_return);
+                    try {
+                        ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
+                        Recv_Centroids = (PointGroup) Byte_Translator.readObject();
+                        this.control_return.send("SUCCESS");
+                    } catch(Exception e) {
+                        System.err.println("Error Parsing Centroids");
+                    }
+
+                    //Broadcast that a Centroid Update is Ready and phase 2 will begin soon
+                    this.control_transmit.send("BROADCAST CENTROID_UPDATE");
                 }
             }
 
@@ -160,6 +175,7 @@ public class Coordinator implements Runnable {
 
         } else { //Client doesn't have score yet, score = value
             client_score_map.put(client_id, amount);
+
         }
     }
 

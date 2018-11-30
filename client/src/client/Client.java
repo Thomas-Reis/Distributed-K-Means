@@ -83,8 +83,8 @@ public class Client {
                 System.out.print("Recieved Points from Coordinator...");
                 MyPoint_Group = KMeans.processPointGroup(MyPoint_Group, recieved_centroids);
                 System.out.println("Finished Processing Points");
-                //TODO Send to Phase 2
 
+                //Sends to Collector (Phase 2)
                 ByteArrayOutputStream collector_byte_stream = new ByteArrayOutputStream();
                 ObjectOutput collector_converter = new ObjectOutputStream(collector_byte_stream);
                 collector_converter.writeObject(MyPoint_Group);
@@ -109,16 +109,32 @@ public class Client {
                         ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
                         recieved_centroids = (PointGroup) Byte_Translator.readObject();
                     } else if (msg_parts[1].equals("DONE")) {
-                        //the iteration is complete
-                        break;
+                        //the iteration is complete, wait for the next one
+                        //break;
+                    } else if (msg_parts[1].equals("CENTROID_UPDATE")){
+
+                        System.out.println("Requesting Centroid Update");
+
+                        centroid_request = client_uid + " CENTROIDS_UPDATE";
+                        client_req.send(centroid_request.getBytes(ZMQ.CHARSET), 0);
+                        centroid_raw_bytes = client_req.recv();
+                        System.out.println("Received Centroids!");
+                        Input_Byte_Converter = new ByteArrayInputStream(centroid_raw_bytes);
+                        try {
+                            ObjectInputStream Byte_Translator = new ObjectInputStream(Input_Byte_Converter);
+                            recieved_centroids = (PointGroup) Byte_Translator.readObject();
+                        } catch (Exception e) {
+                            System.err.println("Error Parsing Centroids");
+                        }
+
                     }
                 }
             } catch (Exception e){
                 System.out.println("Error Parsing Broadcast Message");
             }
         }
-        client_taskboard.close();
-        System.out.println("Completed Iteration");
+        //client_taskboard.close();
+        //System.out.println("Completed Iteration");
     }
 
     public static void connect_to_socket(String ip) {

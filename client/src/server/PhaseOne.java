@@ -161,7 +161,22 @@ public class PhaseOne implements Runnable {
                 try {
                     this.getNextGroup();
                 } catch (IndexOutOfBoundsException ex) {
-                    break;
+                    //All the points have been distributed for this iteration
+                    this.control_return.send((this.uid + " DONE " + this.clusters_sent).getBytes(ZMQ.CHARSET));
+                    //listens in on the control socket until the iteration is complete and its okay to redistribute
+                    while(true){
+                        byte[] broadcast_msg = control_socket.recv();
+                        String message = new String(broadcast_msg, ZMQ.CHARSET);
+                        String[] msg_parts = message.split(" ");
+                        if(msg_parts[1].equals("CENTROID_UPDATE")){
+                            break;
+                        }
+                    }
+                    //Do things for next iteration
+                    clusterid = 0;
+                    this.transmitted = true;
+                    this.redundant_sends_left = 0;
+                    this.db.reset();
                 }
             }
 
@@ -169,20 +184,10 @@ public class PhaseOne implements Runnable {
             if (this.redundant_sends_left != 0) {
                 attemptTransmitPointGroup();
             }
-
-            /*
-            //Check for messages from control
-            byte[] control = this.control_socket.recv(ZMQ.DONTWAIT);
-            if (control != null) {
-                String coordinator_message = new String(control, ZMQ.CHARSET);
-                String[] msg_parts = coordinator_message.split(" ");
-
-
-            }*/
-
         }
 
 
+        /*
         //Clean up the sockets
         this.task_transmit_socket.close();
         this.control_socket.close();
@@ -193,6 +198,7 @@ public class PhaseOne implements Runnable {
         //Close the coordinator socket & die
         this.control_return.close();
         return;
+        */
     }
 }
 

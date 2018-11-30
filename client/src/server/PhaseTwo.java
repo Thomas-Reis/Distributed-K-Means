@@ -2,13 +2,9 @@ package server;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
-import shared.Point;
 import shared.PointGroup;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -19,7 +15,7 @@ public class PhaseTwo implements Runnable {
     private int expected_points = Integer.MAX_VALUE;
     private int points_received = 0;
 
-    private int k;
+    private int max_iterations;
 
     private ZMQ.Socket control_socket;
     private ZMQ.Socket control_return;
@@ -38,11 +34,22 @@ public class PhaseTwo implements Runnable {
     //Control_publish = 10010
     //Control_return = 10011
 
+    public static void main(String[] args){
+        ZMQ.Context C = ZMQ.context(3);
+        DatabaseHelper db_temp = new DatabaseHelper("root", "", "localhost", 3306,
+                "kmeans", DatabaseHelper.DatabaseType.MYSQL, "points", "id",
+                "loc_x", "loc_y", "last_seen", "centroids", "id",
+                "centroid_number", "iteration", "loc_x",
+                "loc_y");
+        PhaseTwo init = new PhaseTwo(C,db_temp,"200", 10);
+        init.run();
+    }
 
-    PhaseTwo(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int k) {
+    PhaseTwo(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int iterations) {
         this.uid = uid;
         this.db = db;
-        this.k = k;
+        this.max_iterations = iterations;
+
 
         //Setup the transmission socket
         this.task_receive_socket = zmq_context.socket(SocketType.PULL);
@@ -66,13 +73,14 @@ public class PhaseTwo implements Runnable {
     public void run() {
 
         //Let the Coordinator know we've started
-        this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
+        //this.control_return.send((this.uid +" START").getBytes(ZMQ.CHARSET));
 
         // Loop through all iterations
         int iteration = 1;
-        while (iteration <= k) {
-            this.control_return.send((this.uid + " ITERATION " + iteration).getBytes(ZMQ.CHARSET));
+        while (iteration <= max_iterations) {
+            //this.control_return.send((this.uid + " ITERATION " + iteration).getBytes(ZMQ.CHARSET));
 
+            /*
             //Check for messages from control
             byte[] control = this.control_socket.recv(ZMQ.DONTWAIT);
             if (control != null) {
@@ -85,6 +93,7 @@ public class PhaseTwo implements Runnable {
                 { this.expected_points = Integer.parseInt(msg_parts[2]); }
 
             }
+            */
 
             //Check for clusters from the workers
             byte[] cluster_raw = this.task_receive_socket.recv(ZMQ.DONTWAIT);
@@ -172,8 +181,25 @@ public class PhaseTwo implements Runnable {
                 points_received = 0;
 
                 // If the iteration number has not been reached yet, the new centroids need to be sent to workers
-                if (iteration <= k) {
-                    // TODO send the new centroids to the workers here
+                if (iteration <= max_iterations) {
+                    // Sends the new centroids to the workers here
+                    this.control_return.send(this.uid + "COLLECTOR_CENTROID_UPDATE");
+
+                    byte[] msg_bytes;
+                    //Convert the Centroids to a byte array to transmit
+                    ByteArrayOutputStream centroid_byte_stream = new ByteArrayOutputStream();
+                    try (ObjectOutput centroid_converter = new ObjectOutputStream(centroid_byte_stream)) {
+                        centroid_converter.writeObject(new_centroids);
+                        centroid_converter.flush();
+                        msg_bytes = centroid_byte_stream.toByteArray();
+                    } catch (IOException ex) {
+                        msg_bytes = new byte[]{0};
+                    }
+                    if (msg_bytes.length != 1) {
+                        System.out.println("Sending Centroids");
+                        this.control_return.send(msg_bytes, ZMQ.DONTWAIT);
+                        this.control_return.recv();
+                    }
                 }
                 /* If the iteration has been reached, the coordinator should be signalled that the results have been
                 found */
