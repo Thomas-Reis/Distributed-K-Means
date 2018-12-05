@@ -12,9 +12,9 @@ public class KMeans {
 
     /** Calculates which centroid a given point belongs to.
      *
-     * @param p The point to have classified in terms of which cluster it belongs to.
-     * @param centroids_group The PointGroup that contains the centroids available for the classification.
-     * @return The new point which has the centroid owner assigned to it.
+     * @param p The {@link shared.Point} to have classified in terms of which cluster it belongs to.
+     * @param centroids_group The {@link shared.PointGroup} that contains the centroids available for the classification.
+     * @return The new {@link shared.Point} which has the centroid owner assigned to it.
      */
     private static Point getOwningCentroid(Point p, PointGroup centroids_group) {
         // The current owner of the given point, will be used to return owner
@@ -41,12 +41,12 @@ public class KMeans {
         return p;
     }
 
-    /** Gets all the owning centroids in a point group, and returns the updated point group. The updated point group
-     * will have the k-means addition done as well.
+    /** Gets all the owning centroids in a {@link PointGroup}, and returns the updated {@link PointGroup}.
+     * The updated {@link PointGroup} will have the k-means addition done as well.
      *
-     * @param points_group The PointGroup with the points to classify.
-     * @param centroids_group The PointGroup with the centroids.
-     * @return The given point group with the points classified
+     * @param points_group The {@link PointGroup} with the points to classify.
+     * @param centroids_group The {@link PointGroup} with the centroids.
+     * @return The given {@link PointGroup} with the points classified
      */
     public static PointGroup processPointGroup(PointGroup points_group, PointGroup centroids_group) {
         // Get the ArrayList of given points

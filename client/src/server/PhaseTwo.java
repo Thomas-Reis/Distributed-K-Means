@@ -9,6 +9,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+/** The phase two node for calculating k-means, acting as the collector of the work done by the
+ * {@link client.Client worker clients}.
+ *
+ */
 public class PhaseTwo implements Runnable {
     private DatabaseHelper db;
 
@@ -37,6 +41,10 @@ public class PhaseTwo implements Runnable {
     //Control_publish = 10010
     //Control_return = 10011
 
+    /** Runs the phase two node.
+     *
+     * @param args Any command line arguments.
+     */
     public static void main(String[] args){
         ZMQ.Context C = ZMQ.context(16);
         DatabaseHelper db_temp = new DatabaseHelper("root", "f#T5nw3IK%RV", "localhost", 3306,
@@ -49,6 +57,13 @@ public class PhaseTwo implements Runnable {
         init.run();
     }
 
+    /** Creates a new phase two node
+     * @param zmq_context The context for zeromq.
+     * @param db The {@link DatabaseHelper database} to select {@link shared.Point points} from.
+     * @param uid The uid of the node.
+     * @param iterations The number of iterations that are to be run for the k-means calculation.
+     * @param expected_points The number of expected points in the data set.
+     */
     PhaseTwo(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int iterations, int expected_points) {
         this.uid = uid;
         this.db = db;
@@ -78,6 +93,9 @@ public class PhaseTwo implements Runnable {
     }
 
 
+    /** Runs the phase 2 client.
+     *
+     */
     @Override
     public void run() {
 

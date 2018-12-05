@@ -7,6 +7,10 @@ import shared.PointGroup;
 import java.io.*;
 import java.util.HashMap;
 
+/** The coordinator for the network. Handles new clients connecting and selecting the data set to start the calculation
+ * with. Also handles any requests from any {@link client.Client worker clients}, {@link PhaseOne the phase one node},
+ * or {@link PhaseTwo the phase 2 node}.
+ */
 public class Coordinator implements Runnable {
     ;
     private static String PHASEONEIP = "127.0.0.1";
@@ -31,11 +35,18 @@ public class Coordinator implements Runnable {
     private ZMQ.Socket collector_receive;
     private ZMQ.Context zmq_context;
 
+    /** The main function for the coordinator.
+     *
+     * @param args Any command line arguments that are given.
+     */
     public static void main(String[] args){
         Coordinator init = new Coordinator();
         init.run();
     }
 
+    /** Constructor for the {@link server.Coordinator}. Sets up all of the needed sockets.
+     *
+     */
     Coordinator() {
 
         this.zmq_context = ZMQ.context(zmq_iothreads);
@@ -63,6 +74,9 @@ public class Coordinator implements Runnable {
         }
     }
 
+    /** Runs the coordinator.
+     *
+     */
     @Override
     public void run() {
         while (true) {
@@ -177,6 +191,11 @@ public class Coordinator implements Runnable {
         }
     }
 
+    /** Increments a {{@link client.Client}}'s score by a given amount.
+     *
+     * @param client_id The id of the {{@link client.Client}}.
+     * @param amount The score to add.
+     */
     private void incrementClientScore(int client_id, int amount) {
         //Add it to the map
         if (client_score_map.containsKey(client_id)) { //If the client already has a score, score += value

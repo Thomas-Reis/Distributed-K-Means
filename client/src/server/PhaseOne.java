@@ -11,6 +11,10 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.sql.SQLException;
 
+/** The class that handles all of the calculations for phase one of k-means. It retrieves centroids as a
+ * {@link shared.PointGroup point group} from the {@link Coordinator connected coordinator}.
+ *
+ */
 public class PhaseOne implements Runnable {
 
     //private ClientLink origin;
@@ -47,6 +51,10 @@ public class PhaseOne implements Runnable {
     //Control_publish = 10010
     //Control_return = 10011
 
+    /** The main function for the phase one node.
+     *
+     * @param args Any command line arguments given.
+     */
     public static void main(String[] args) {
         ZMQ.Context zmq_context = ZMQ.context(16);
         DatabaseHelper db = new DatabaseHelper("root", "f#T5nw3IK%RV", "localhost", 3306,
@@ -61,7 +69,15 @@ public class PhaseOne implements Runnable {
         init.run();
     }
 
-
+    /** Creates the phase one node
+     *
+     * @param zmq_context The context for zeromq.
+     * @param db The {@link DatabaseHelper database} to select {@link shared.Point points} from.
+     * @param uid The uid of the node.
+     * @param redundant_calculations The number of redundant calculations to perform.
+     * @param group_size The number of {@link shared.Point points} to get when selecting
+     * {@link shared.PointGroup point groups} from the {@link DatabaseHelper database}.
+     */
     PhaseOne(ZMQ.Context zmq_context, DatabaseHelper db, String uid, int redundant_calculations, int group_size) {
         this.db = db;
 
@@ -90,6 +106,9 @@ public class PhaseOne implements Runnable {
         GenCentroids();
     }
 
+    /** Generates centroids as {@link shared.Point points} in a {@link shared.PointGroup} for the first iteration.
+     *
+     */
     public void GenCentroids() {
         while (true) { //Keep hitting it until it works
             try {
@@ -101,7 +120,10 @@ public class PhaseOne implements Runnable {
         }
     }
 
-
+    /** Pushes the {@link shared.PointGroup point groups} that were retrieved from the {@link DatabaseHelper database}
+     * into a zeromq socket.
+     *
+     */
     private void attemptTransmitPointGroup() {
         System.out.print("Outputting Points...");
         //this.transmitted = this.task_transmit_socket.send(this.next_transmission, ZMQ.DONTWAIT);
@@ -112,6 +134,10 @@ public class PhaseOne implements Runnable {
         System.out.println("Complete!");
     }
 
+    /** Gets the next {@link shared.PointGroup} to send to {@link client.Client clients} through the zeromq sockets.
+     *
+     * @throws IndexOutOfBoundsException
+     */
     private void getNextGroup() throws IndexOutOfBoundsException {
         if (this.transmitted) {
             PointGroup nextCluster;
@@ -149,6 +175,9 @@ public class PhaseOne implements Runnable {
         }
     }
 
+    /** Runs the phase one node.
+     *
+     */
     @Override
     public void run() {
         //Let the Coordinator know we've started

@@ -13,6 +13,9 @@ import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import shared.PointGroup;
 
+/** A worker client that helps calculate the first phase of the k-means calculation.
+ *
+ */
 public class Client {
     public int weight = 1;
     private static ArrayList<Point> AssignedPoints = new ArrayList<>();
@@ -31,6 +34,11 @@ public class Client {
     private static ZMQ.Socket collector_upload;
     private static ZMQ.Context zmq_context;
 
+    /** Runs the client.
+     *
+     * @param args Arguments given at the command line.
+     * @throws InterruptedException
+     */
     public static void main(String[] args) throws InterruptedException {
         PointGroup recieved_centroids = null;
         PointGroup MyPoint_Group;
@@ -137,6 +145,11 @@ public class Client {
         //System.out.println("Completed Iteration");
     }
 
+    /** Setup all the socket connections for when the worker client connects to the
+     * {@link server.Coordinator network coordinator}
+     *
+     * @param ip The ip of the {@link server.Coordinator coordinator} that the worker is connecting to.
+     */
     public static void connect_to_socket(String ip) {
         try {
             client_sub = zmq_context.socket(SocketType.SUB);

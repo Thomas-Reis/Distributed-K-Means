@@ -115,7 +115,7 @@ public class DatabaseHelper implements Serializable {
         return conn;
     }
 
-    /** Gets a list of points from the database.
+    /** Gets a list of {@link shared.Point points} from the database.
      *
      * @param num_points The number of points to grab.
      * @return An array list of points that were retrieved or null if an sql error occurred.
@@ -169,7 +169,7 @@ public class DatabaseHelper implements Serializable {
 
     /** Updates the database stating when a point has been seen in the given iteration.
      *
-     * @param points_seen The list of points to mark as seen in the iteration.
+     * @param points_seen The list of {@link shared.Point points} to mark as seen in the iteration.
      * @param iteration_number The iteration number that the point was seen in.
      * @return Whether or not the insertions all happened successfully.
      */
@@ -205,7 +205,7 @@ public class DatabaseHelper implements Serializable {
 
     /** Inserts the given centroids into the database with the given iteration number.
      *
-     * @param centroids The list of centroids to insert, where their id is equal to their index + 1
+     * @param centroids The list of {@link shared.Point centroids} to insert, where their id is equal to their index + 1
      *                  (so index # starts at 1).
      * @param iteration The iteration of k-means that these centroids were calculated from.
      * @return Whether or not the points were successfully inserted.
@@ -246,10 +246,11 @@ public class DatabaseHelper implements Serializable {
         return success;
     }
 
-    /** Gets an ArrayList of points to use as starting centroids by randomly selecting k points from the database.
+    /** Gets an ArrayList of {@link shared.Point points} to use as starting centroids by randomly selecting k points
+     * from the database.
      *
      * @param k The number of centroids needed.
-     * @return The ArrayList of points.
+     * @return The ArrayList of {@link shared.Point points}.
      */
     public ArrayList<Point> getStartingCentroids(int k) throws SQLException {
         // The connection to the database
